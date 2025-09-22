@@ -27,7 +27,42 @@ chat_histories: Dict[str, List[dict]] = {}
 def new_id() -> str:
     return str(uuid.uuid4())
 
-# ✅ MAIN ROUTE - Serves the complete HTML page with embedded CSS and JavaScript
+def is_educational_content(message: str) -> bool:
+    """Check if the message is educational/academic content"""
+    non_educational_keywords = [
+        'joke', 'funny', 'entertainment', 'movie', 'game', 'sport', 'gossip',
+        'celebrity', 'dating', 'relationship', 'personal', 'private', 'hack',
+        'illegal', 'violence', 'weapon', 'drug', 'adult', 'inappropriate',
+        'password', 'credit card', 'money', 'investment', 'trading', 'crypto',
+        'political', 'religion', 'controversial', 'offensive'
+    ]
+    
+    educational_keywords = [
+        'learn', 'study', 'explain', 'teach', 'understand', 'concept', 'theory',
+        'formula', 'equation', 'definition', 'example', 'homework', 'assignment',
+        'exam', 'test', 'quiz', 'subject', 'topic', 'lesson', 'tutorial',
+        'mathematics', 'science', 'history', 'geography', 'literature', 'language',
+        'physics', 'chemistry', 'biology', 'computer', 'programming', 'technology',
+        'engineering', 'medicine', 'law', 'economics', 'psychology', 'philosophy',
+        'art', 'music', 'education', 'academic', 'research', 'analysis'
+    ]
+    
+    message_lower = message.lower()
+    
+    # Check for non-educational content
+    for keyword in non_educational_keywords:
+        if keyword in message_lower:
+            return False
+    
+    # Check for educational content
+    for keyword in educational_keywords:
+        if keyword in message_lower:
+            return True
+    
+    # If no clear indicators, assume educational (to be safe)
+    return True
+
+# Main route - serves the complete HTML page
 @app.route("/")
 def index():
     return '''
@@ -35,7 +70,7 @@ def index():
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AI Tutor Chatbot</title>
+  <title>AI Education Tutor</title>
   <style>
     body {
       font-family: "Segoe UI", Tahoma, sans-serif;
@@ -66,32 +101,22 @@ def index():
       text-align: center;
     }
 
+    .notice {
+      background: #e3f2fd;
+      color: #1565c0;
+      padding: 10px;
+      font-size: 12px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
     #chatWindow {
-      height: 400px;
+      height: 350px;
       overflow-y: auto;
       border: 1px solid #ccc;
       padding: 10px;
       display: flex;
       flex-direction: column;
-    }
-
-    .message {
-      margin-bottom: 12px;
-      line-height: 1.4;
-      padding: 10px 14px;
-      border-radius: 10px;
-      max-width: 80%;
-    }
-
-    .user-message {
-      background: #e1f5fe;
-      align-self: flex-end;
-      text-align: right;
-    }
-
-    .bot-message {
-      background: #f1f1f1;
-      align-self: flex-start;
     }
 
     .footer {
@@ -140,15 +165,16 @@ def index():
 </head>
 <body>
   <div class="chat-container">
-    <div class="header">🤖 AI Tutor Chatbot</div>
+    <div class="header">📚 AI Education Tutor</div>
+    <div class="notice">This AI tutor only answers educational and academic questions</div>
     <div id="chatWindow"></div>
 
     <div class="footer">
       <select id="levelSelect">
-        <option value="beginner">Beginner</option>
-        <option value="advanced">Advanced</option>
+        <option value="beginner">Beginner Level</option>
+        <option value="advanced">Advanced Level</option>
       </select>
-      <input id="questionInput" type="text" placeholder="Ask your question here..." />
+      <input id="questionInput" type="text" placeholder="Ask an educational question..." />
       <button id="sendBtn" disabled>Send</button>
     </div>
   </div>
@@ -179,12 +205,13 @@ def index():
     async function sendMessage() {
       const question = input.value.trim();
       if (!question) return;
+      
       addMessage(question, true);
       input.value = '';
       sendBtn.disabled = true;
 
       const level = levelSelect.value;
-      addMessage('AI Tutor is typing...', false);
+      addMessage('AI Tutor is analyzing your question...', false);
 
       try {
         const res = await fetch('/chat', {
@@ -204,11 +231,11 @@ def index():
           addMessage(`Error: ${data.error}`, false);
         } else {
           currentChatId = data.chat_id;
-          addMessage(data.reply.content || "Sorry, I didn't get that.", false);
+          addMessage(data.reply.content || "I apologize, but I can only help with educational topics.", false);
         }
       } catch (error) {
         removeTypingMessage();
-        addMessage('Error reaching server.', false);
+        addMessage('Error connecting to tutor. Please try again.', false);
       }
     }
 
@@ -243,7 +270,7 @@ def index():
       const msgs = chatWindow.childNodes;
       if (msgs.length) {
         const lastMsg = msgs[msgs.length - 1];
-        if (lastMsg.textContent === 'AI Tutor is typing...') {
+        if (lastMsg.textContent === 'AI Tutor is analyzing your question...') {
           chatWindow.removeChild(lastMsg);
         }
       }
@@ -253,12 +280,17 @@ def index():
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !sendBtn.disabled) sendMessage();
     });
+
+    // Add initial welcome message
+    window.onload = function() {
+      addMessage('Welcome! I am your AI Education Tutor. I can help you with academic subjects like Mathematics, Science, History, Literature, Languages, and more. Please ask me educational questions only.', false);
+    };
   </script>
 </body>
 </html>
     '''
 
-# Your existing chat route
+# Chat endpoint with educational content filtering
 @app.route("/chat", methods=["POST"])
 def chat() -> tuple:
     data = request.get_json(silent=True) or {}
@@ -267,36 +299,89 @@ def chat() -> tuple:
     chat_id: str = data.get("chat_id") or new_id()
 
     if not user_message:
-        return jsonify({"error": "field 'message' is required"}), 400
+        return jsonify({"error": "Please provide a message"}), 400
+
+    # Check if the message is educational content
+    if not is_educational_content(user_message):
+        return jsonify({
+            "chat_id": chat_id,
+            "reply": {
+                "message_id": new_id(),
+                "content": "I'm sorry, but I can only help with educational and academic topics. Please ask me questions related to subjects like Mathematics, Science, History, Literature, Languages, Computer Science, or other academic fields."
+            }
+        }), 200
 
     chat_histories.setdefault(chat_id, []).append(
         {"role": "user", "content": user_message, "message_id": new_id()}
     )
 
+    # Enhanced system prompts with strict educational focus
     if level == "beginner":
-        system_prompt = """You are an AI tutor. Always explain concepts in very simple, beginner-friendly terms.
+        system_prompt = """You are an AI Education Tutor designed exclusively for educational purposes. You MUST follow these rules:
 
-IMPORTANT FORMATTING RULES:
-- Do NOT use any markdown formatting like **bold**, *italic*, or __underline__
-- Do NOT use asterisks (*) or underscores (_) for emphasis
-- Use plain text only
-- Start with a clear heading or definition followed by a colon
-- Put the main content on the next line after the heading
-- Use one blank line between different sections or topics
-- Write in short, clear paragraphs
-- Use bullet points with hyphens (-) or numbers (1, 2, 3) when helpful"""
-    else:
-        system_prompt = """You are an AI tutor. Provide advanced, detailed, structured explanations.
+STRICT CONTENT RULES:
+- ONLY answer questions related to academic subjects: Mathematics, Science, History, Geography, Literature, Languages, Computer Science, Arts, Music, Philosophy, Psychology, Economics, Medicine, Engineering, Law, and other educational topics
+- REFUSE to answer questions about: entertainment, jokes, personal advice, relationships, politics, religion, controversial topics, illegal activities, violence, adult content, or non-educational topics
+- If asked non-educational questions, politely redirect to educational content
 
-IMPORTANT FORMATTING RULES:
-- Do NOT use any markdown formatting like **bold**, *italic*, or __underline__
-- Do NOT use asterisks (*) or underscores (_) for emphasis
+EDUCATIONAL APPROACH - BEGINNER LEVEL:
+- Explain concepts in very simple, beginner-friendly terms
+- Use everyday examples and analogies
+- Break down complex topics into small, digestible parts
+- Encourage questions and curiosity
+- Provide step-by-step explanations
+
+FORMATTING RULES:
+- Do NOT use markdown formatting (**bold**, *italic*, etc.)
 - Use plain text only
-- Start with a comprehensive definition or overview followed by a colon
-- Organize information into clear sections with headings followed by colons
-- Use one blank line between different sections
-- Include technical details and examples
-- Structure with bullet points using hyphens (-) or numbered lists (1, 2, 3)"""
+- Start with clear headings followed by colons
+- Use numbered lists (1, 2, 3) or bullet points with hyphens (-)
+- Separate sections with blank lines
+- Keep explanations clear and structured
+
+RESPONSE STRUCTURE:
+Topic: [Clear topic name]
+Simple Explanation: [Easy-to-understand definition]
+Key Points: [Main concepts broken down]
+Example: [Real-world example if helpful]
+Why It Matters: [Educational significance]
+
+Remember: You are here to educate and inspire learning in academic subjects only."""
+
+    else:  # advanced level
+        system_prompt = """You are an AI Education Tutor designed exclusively for educational purposes. You MUST follow these rules:
+
+STRICT CONTENT RULES:
+- ONLY answer questions related to academic subjects: Mathematics, Science, History, Geography, Literature, Languages, Computer Science, Arts, Music, Philosophy, Psychology, Economics, Medicine, Engineering, Law, and other educational topics
+- REFUSE to answer questions about: entertainment, jokes, personal advice, relationships, politics, religion, controversial topics, illegal activities, violence, adult content, or non-educational topics
+- If asked non-educational questions, politely redirect to educational content
+
+EDUCATIONAL APPROACH - ADVANCED LEVEL:
+- Provide detailed, comprehensive explanations
+- Include technical terminology and precise definitions
+- Discuss underlying principles and theories
+- Make connections between different concepts
+- Encourage critical thinking and analysis
+- Reference established academic sources when relevant
+
+FORMATTING RULES:
+- Do NOT use markdown formatting (**bold**, *italic*, etc.)
+- Use plain text only
+- Start with comprehensive headings followed by colons
+- Use numbered lists (1, 2, 3) for complex processes
+- Use bullet points with hyphens (-) for related concepts
+- Organize information into clear sections
+- Include relevant formulas, equations, or technical details
+
+RESPONSE STRUCTURE:
+Advanced Topic Analysis: [Comprehensive topic overview]
+Theoretical Foundation: [Underlying principles and theories]
+Key Components: [Detailed breakdown of main elements]
+Applications: [How the concept is used or applied]
+Connections: [Links to related academic concepts]
+Further Study: [Suggestions for deeper learning]
+
+Remember: You are here to provide rigorous academic education in scholarly subjects only."""
 
     messages = [{"role": "system", "content": system_prompt}] + [
         {"role": m["role"], "content": m["content"]} for m in chat_histories[chat_id]
@@ -306,12 +391,19 @@ IMPORTANT FORMATTING RULES:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
-            temperature=0.7,
-            max_tokens=500,
+            temperature=0.3,  # Lower temperature for more focused, educational responses
+            max_tokens=600,   # Increased for detailed educational explanations
+            presence_penalty=0.1,  # Slight penalty to avoid repetitive responses
+            frequency_penalty=0.1  # Slight penalty for varied vocabulary
         )
         bot_reply = response.choices[0].message.content.strip()
+        
+        # Additional safety check - if response seems non-educational, provide fallback
+        if not is_educational_content(bot_reply):
+            bot_reply = "I apologize, but I can only provide assistance with educational and academic topics. Please ask me about subjects like Mathematics, Science, History, Literature, or other academic fields, and I'll be happy to help you learn!"
+
     except OpenAIError as e:
-        return jsonify({"error": f"OpenAI API error: {e}"}), 502
+        return jsonify({"error": f"Unable to process your educational query at this time: {str(e)}"}), 502
 
     assistant_msg = {"role": "assistant", "content": bot_reply, "message_id": new_id()}
     chat_histories[chat_id].append(assistant_msg)
@@ -323,6 +415,11 @@ IMPORTANT FORMATTING RULES:
             "content": bot_reply,
         },
     }), 200
+
+# Health check endpoint
+@app.route("/health")
+def health():
+    return jsonify({"status": "healthy", "service": "AI Education Tutor"}), 200
 
 # Get port from environment variable
 port = int(os.environ.get("PORT", 5000))
