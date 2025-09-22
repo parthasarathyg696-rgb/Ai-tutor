@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import uuid
+import time
 from typing import Dict, List
 
 from dotenv import load_dotenv
@@ -52,66 +53,12 @@ def is_educational_content(message: str) -> bool:
         'art', 'music', 'dance', 'drama', 'theater', 'fine arts',
         'physical education', 'sports', 'health', 'nutrition',
         
-        # College Degree Branches - Engineering
-        'engineering', 'mechanical engineering', 'civil engineering', 'electrical engineering',
-        'computer science', 'information technology', 'software engineering',
-        'electronics', 'chemical engineering', 'aerospace engineering',
-        'automobile engineering', 'biotechnology engineering',
-        
-        # College Degree Branches - Medical
-        'medicine', 'mbbs', 'anatomy', 'physiology', 'pharmacology',
-        'pathology', 'microbiology', 'biochemistry', 'surgery',
-        'dentistry', 'nursing', 'pharmacy', 'physiotherapy',
-        'veterinary', 'medical science', 'neurology', 'cardiology',
-        
-        # College Degree Branches - Science
-        'bsc', 'msc', 'mathematics', 'physics', 'chemistry', 'biology',
-        'environmental science', 'geology', 'astronomy', 'astrophysics',
-        'marine biology', 'genetics', 'molecular biology',
-        
-        # College Degree Branches - Arts & Humanities
-        'ba', 'ma', 'english literature', 'history', 'political science',
-        'philosophy', 'psychology', 'sociology', 'anthropology',
-        'journalism', 'mass communication', 'linguistics',
-        'archaeology', 'museum studies', 'library science',
-        
-        # College Degree Branches - Commerce & Management
-        'bcom', 'mcom', 'bba', 'mba', 'accounting', 'finance',
-        'marketing', 'human resources', 'operations management',
-        'business administration', 'chartered accountancy',
-        'cost accounting', 'taxation', 'banking', 'insurance',
-        
-        # College Degree Branches - Law
-        'law', 'llb', 'llm', 'constitutional law', 'criminal law',
-        'civil law', 'corporate law', 'international law',
-        'human rights', 'intellectual property',
-        
-        # College Degree Branches - Education
-        'bed', 'med', 'education', 'pedagogy', 'child psychology',
-        'educational psychology', 'curriculum development',
-        
-        # College Degree Branches - Technology & Computer Science
+        # Technology & AI topics
         'computer science', 'information technology', 'software engineering',
         'artificial intelligence', 'ai', 'machine learning', 'data science',
-        'cybersecurity', 'network security', 'database management',
-        'web development', 'mobile app development', 'programming',
-        'python', 'java', 'c++', 'javascript', 'html', 'css',
+        'programming', 'python', 'java', 'c++', 'javascript', 'html', 'css',
         'algorithms', 'data structures', 'operating systems',
         'computer networks', 'cloud computing', 'blockchain',
-        
-        # College Degree Branches - Architecture & Design
-        'architecture', 'interior design', 'graphic design',
-        'fashion design', 'product design', 'urban planning',
-        
-        # College Degree Branches - Agriculture
-        'agriculture', 'agricultural engineering', 'horticulture',
-        'forestry', 'animal husbandry', 'dairy science',
-        'food technology', 'agricultural economics',
-        
-        # College Degree Branches - Others
-        'hotel management', 'tourism', 'aviation', 'maritime studies',
-        'film studies', 'animation', 'photography',
-        'social work', 'public administration',
         
         # General Academic Terms
         'study', 'learn', 'education', 'academic', 'school', 'college',
@@ -158,7 +105,7 @@ def is_educational_content(message: str) -> bool:
     # Default to allowing content (educational focus)
     return True
 
-# Main route - serves the complete HTML page with attractive UI
+# Main route - serves the complete HTML page with attractive UI and typing effect
 @app.route("/")
 def index():
     return '''
@@ -604,6 +551,19 @@ def index():
       max-width: 500px;
       margin: 0 auto;
     }
+
+    /* Typing effect for bot messages */
+    .typing-effect {
+      overflow: hidden;
+      border-right: 2px solid transparent;
+      white-space: nowrap;
+      animation: typing-cursor 1s infinite;
+    }
+
+    @keyframes typing-cursor {
+      0%, 50% { border-right-color: transparent; }
+      51%, 100% { border-right-color: #667eea; }
+    }
   </style>
 </head>
 <body>
@@ -616,22 +576,22 @@ def index():
           </div>
           EduBot
         </h1>
-        <div class="subtitle">Academic Tutor for All School & College Students</div>
+        <div class="subtitle">Your Friendly AI Tutor</div>
       </div>
     </div>
     
     <div class="notice">
       <i class="fas fa-university"></i>
-      Supporting All School Standards (1-12) & College Degrees (Engineering, Medical, Arts, Commerce, Law, etc.)
+      Supporting All School Standards & College Degrees - Ask me anything academic!
     </div>
     
     <div id="chatWindow">
       <div class="welcome-message">
         <div class="icon">🎓</div>
-        <h3>Welcome to EduBot - Your Academic Companion!</h3>
-        <p>I'm designed to help students from all school standards (Class 1-12) and college degree programs. Whether you're studying Mathematics, Science, Engineering, Medicine, Arts, Commerce, Law, or any other academic field - I'm here to provide clear explanations and help you understand concepts better.</p>
+        <h3>Hey there! I'm EduBot!</h3>
+        <p>I'm your friendly AI tutor here to help you with any academic questions. Whether it's homework, exam prep, or just curiosity about a topic - I'm here to make learning fun and easy!</p>
         <br>
-        <p><strong>Ask me about:</strong> Your homework, assignments, exam preparation, concept explanations, problem solving, or any academic topic from your curriculum!</p>
+        <p>Go ahead, ask me anything! 😊</p>
       </div>
     </div>
 
@@ -639,13 +599,13 @@ def index():
       <div class="input-row">
         <div class="level-selector">
           <select id="levelSelect">
-            <option value="school">🏫 School Student</option>
-            <option value="college">🎓 College Student</option>
+            <option value="school">🏫 School</option>
+            <option value="college">🎓 College</option>
           </select>
         </div>
         
         <div class="input-container">
-          <input id="questionInput" type="text" placeholder="Ask about any subject from your curriculum..." autocomplete="off" />
+          <input id="questionInput" type="text" placeholder="Ask me anything..." autocomplete="off" />
           <button id="sendBtn" disabled>
             <i class="fas fa-paper-plane"></i>
           </button>
@@ -653,14 +613,11 @@ def index():
       </div>
       
       <div class="features">
-        <span class="feature-tag">All School Subjects</span>
-        <span class="feature-tag">Engineering</span>
-        <span class="feature-tag">Medical</span>
-        <span class="feature-tag">Arts & Humanities</span>
-        <span class="feature-tag">Commerce</span>
-        <span class="feature-tag">Law</span>
+        <span class="feature-tag">Math & Science</span>
+        <span class="feature-tag">Languages</span>
+        <span class="feature-tag">History</span>
         <span class="feature-tag">Computer Science</span>
-        <span class="feature-tag">Research Help</span>
+        <span class="feature-tag">All Subjects</span>
       </div>
     </div>
   </div>
@@ -697,6 +654,24 @@ def index():
       }
     }
 
+    // Typing effect function
+    function typeMessage(element, text, speed = 30) {
+      element.innerHTML = '';
+      let i = 0;
+      element.classList.add('typing-effect');
+      
+      function typeChar() {
+        if (i < text.length) {
+          element.innerHTML += text.charAt(i);
+          i++;
+          setTimeout(typeChar, speed);
+        } else {
+          element.classList.remove('typing-effect');
+        }
+      }
+      typeChar();
+    }
+
     async function sendMessage() {
       const question = input.value.trim();
       if (!question) return;
@@ -724,18 +699,18 @@ def index():
         removeTypingIndicator();
         
         if (data.error) {
-          addMessage(`I apologize, but I encountered an error: ${data.error}`, false);
+          addMessage(`I'm sorry, but I encountered an error: ${data.error}`, false, true);
         } else {
           currentChatId = data.chat_id;
-          addMessage(data.reply.content || "I apologize, but I can only help with educational topics.", false);
+          addMessage(data.reply.content || "I can only help with educational topics!", false, true);
         }
       } catch (error) {
         removeTypingIndicator();
-        addMessage('I apologize, but I\\'m having trouble connecting right now. Please try again in a moment.', false);
+        addMessage('Sorry, I\\'m having trouble connecting right now. Please try again!', false, true);
       }
     }
 
-    function addMessage(text, isUser) {
+    function addMessage(text, isUser, useTyping = false) {
       const messageDiv = document.createElement('div');
       messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
       
@@ -748,7 +723,14 @@ def index():
       
       if (!isUser) {
         const cleanText = stripMarkdown(text);
-        content.innerHTML = cleanText.replace(/\\n/g, '<br>');
+        const formattedText = cleanText.replace(/\\n/g, '<br>');
+        
+        if (useTyping) {
+          content.innerHTML = '';
+          typeMessage(content, formattedText, 20);
+        } else {
+          content.innerHTML = formattedText;
+        }
       } else {
         content.textContent = text;
       }
@@ -800,7 +782,7 @@ def index():
 </html>
     '''
 
-# Chat endpoint with proper educational content handling
+# Chat endpoint with more conversational, humanized responses
 @app.route("/chat", methods=["POST"])
 def chat() -> tuple:
     data = request.get_json(silent=True) or {}
@@ -809,16 +791,23 @@ def chat() -> tuple:
     chat_id: str = data.get("chat_id") or new_id()
 
     if not user_message:
-        return jsonify({"error": "Please provide a message"}), 400
+        return jsonify({"error": "Please ask me something!"}), 400
 
-    # Handle simple greetings
+    # Handle simple greetings with friendly responses
     greetings = ['hi', 'hello', 'hey', 'hii', 'greetings', 'good morning', 'good afternoon', 'good evening', 'namaste']
     if user_message.lower().strip() in greetings:
+        friendly_responses = [
+            "Hey there! 😊 I'm EduBot, your friendly AI tutor. What would you like to learn about today?",
+            "Hello! Great to see you here! I'm ready to help you with any academic questions you have.",
+            "Hi! I'm EduBot and I love helping students learn. What subject can I help you with?",
+            "Hey! Ready to learn something awesome today? Just ask me any academic question!",
+        ]
+        import random
         return jsonify({
             "chat_id": chat_id,
             "reply": {
                 "message_id": new_id(),
-                "content": "Hello! I'm EduBot, your academic tutor for all school and college subjects. I can help you with questions from any standard (Class 1-12) or college degree program including Engineering, Medical, Arts, Commerce, Law, Computer Science, and more. What would you like to learn about today?"
+                "content": random.choice(friendly_responses)
             }
         }), 200
 
@@ -828,7 +817,7 @@ def chat() -> tuple:
             "chat_id": chat_id,
             "reply": {
                 "message_id": new_id(),
-                "content": "I'm designed to help with academic and educational topics for school and college students. Please ask me questions related to your curriculum, homework, assignments, or any subject you're studying. I'm here to help you learn!"
+                "content": "I'm designed to be your academic helper! 📚 Ask me about any school or college subject, and I'll do my best to explain it in a way that makes sense. What would you like to learn about?"
             }
         }), 200
 
@@ -836,58 +825,66 @@ def chat() -> tuple:
         {"role": "user", "content": user_message, "message_id": new_id()}
     )
 
-    # Enhanced system prompts for school and college students
+    # More conversational and humanized system prompts
     if level == "school":
-        system_prompt = """You are EduBot, an AI academic tutor designed to help school students from Class 1 to Class 12. You MUST follow these rules:
+        system_prompt = """You are EduBot, a friendly and encouraging AI tutor for school students. You should be:
 
-ACADEMIC FOCUS:
-- Help with ALL school subjects: Mathematics, Science (Physics, Chemistry, Biology), Social Studies (History, Geography, Civics), Languages (English, Hindi, Regional), Computer Science, Arts, Physical Education
-- Support ALL educational boards: CBSE, ICSE, State Boards, International Boards
-- Assist with homework, assignments, exam preparation, concept understanding
-- Provide age-appropriate explanations based on the student's class level
+PERSONALITY & TONE:
+- Warm, encouraging, and supportive like a helpful friend
+- Use casual, conversational language that's easy to understand
+- Be enthusiastic about learning and show genuine interest in helping
+- Use emojis occasionally to make conversations more engaging
+- Keep responses concise but comprehensive (2-4 paragraphs max)
 
 TEACHING APPROACH:
-- Use simple, clear language appropriate for school students
-- Provide step-by-step explanations
-- Use examples and analogies that students can relate to
-- Encourage learning and curiosity
-- Break down complex topics into smaller parts
-- Offer practice problems when relevant
+- Explain concepts in simple, relatable terms
+- Use everyday examples students can connect with
+- Break complex topics into bite-sized pieces
+- Always encourage questions and curiosity
+- Avoid being too formal or academic in tone
 
-RESPONSE FORMAT:
-- Start with the topic name
-- Give a clear, simple explanation
-- Provide examples if helpful
-- Add step-by-step solutions for problems
-- End with encouragement to ask more questions
+RESPONSE STYLE:
+- Start with a friendly acknowledgment of their question
+- Give clear, practical explanations
+- Use analogies and real-world examples
+- End with encouragement or an invitation to ask more
+- Keep it conversational, not like a textbook
 
-Remember: You are helping school students learn and understand their curriculum better."""
+IMPORTANT: Keep responses shorter and more conversational. Aim for 3-5 sentences that directly answer their question in a friendly, helpful way.
+
+Example tone: "Great question! AI is basically like having a really smart assistant that can learn and solve problems. Think of it like..." 
+
+Remember: You're their friendly study buddy, not a formal teacher."""
 
     else:  # college level
-        system_prompt = """You are EduBot, an AI academic tutor designed to help college students across all degree programs. You MUST follow these rules:
+        system_prompt = """You are EduBot, a knowledgeable yet approachable AI tutor for college students. You should be:
 
-ACADEMIC FOCUS:
-- Support ALL college degrees: Engineering (all branches), Medical (MBBS, BDS, Pharmacy, Nursing), Arts & Humanities, Commerce & Management, Law, Computer Science, Architecture, Agriculture, and more
-- Assist with coursework, assignments, projects, research, exam preparation
-- Help with both undergraduate and postgraduate studies
-- Provide detailed explanations of complex academic concepts
+PERSONALITY & TONE:
+- Professional but friendly and approachable
+- Confident in your knowledge while remaining humble
+- Use clear, articulate language appropriate for college level
+- Show enthusiasm for deeper learning and critical thinking
+- Keep responses focused and practical (3-5 paragraphs max)
 
 TEACHING APPROACH:
-- Use appropriate technical terminology and detailed explanations
-- Provide comprehensive analysis of topics
-- Include theoretical background and practical applications
-- Reference academic principles and established theories
-- Encourage critical thinking and deeper understanding
-- Connect concepts across different subjects when relevant
+- Provide comprehensive but concise explanations
+- Include relevant technical details without overwhelming
+- Make connections between concepts when helpful
+- Encourage analytical thinking and further exploration
+- Balance depth with accessibility
 
-RESPONSE FORMAT:
-- Start with comprehensive topic overview
-- Provide detailed theoretical explanation
-- Include practical applications and examples
-- Add relevant formulas, equations, or technical details
-- Suggest further reading or research directions when appropriate
+RESPONSE STYLE:
+- Acknowledge their question thoughtfully
+- Provide structured, logical explanations
+- Include practical applications when relevant
+- Suggest areas for further study if appropriate
+- Maintain an encouraging, collaborative tone
 
-Remember: You are helping college students master advanced academic concepts in their chosen fields of study."""
+IMPORTANT: Keep responses conversational yet informative. Aim for 4-8 sentences that provide solid understanding without being overwhelming.
+
+Example tone: "That's an excellent question about AI! Artificial Intelligence refers to systems that can perform tasks requiring human-like intelligence..."
+
+Remember: You're a knowledgeable mentor who makes complex topics accessible and engaging."""
 
     messages = [{"role": "system", "content": system_prompt}] + [
         {"role": m["role"], "content": m["content"]} for m in chat_histories[chat_id]
@@ -897,15 +894,15 @@ Remember: You are helping college students master advanced academic concepts in 
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
-            temperature=0.2,  # Lower temperature for accurate educational content
-            max_tokens=700,   # Increased for detailed explanations
-            presence_penalty=0.1,
+            temperature=0.7,  # Higher for more natural, conversational responses
+            max_tokens=300,   # Reduced for shorter, more concise responses
+            presence_penalty=0.2,
             frequency_penalty=0.1
         )
         bot_reply = response.choices[0].message.content.strip()
 
     except OpenAIError as e:
-        return jsonify({"error": f"Unable to process your academic query at this time. Please try again."}), 502
+        return jsonify({"error": "I'm having trouble thinking right now. Can you try asking again?"}), 502
 
     assistant_msg = {"role": "assistant", "content": bot_reply, "message_id": new_id()}
     chat_histories[chat_id].append(assistant_msg)
@@ -921,7 +918,7 @@ Remember: You are helping college students master advanced academic concepts in 
 # Health check endpoint
 @app.route("/health")
 def health():
-    return jsonify({"status": "healthy", "service": "EduBot - Academic Tutor"}), 200
+    return jsonify({"status": "healthy", "service": "EduBot - Your Friendly AI Tutor"}), 200
 
 # Get port from environment variable
 port = int(os.environ.get("PORT", 5000))
