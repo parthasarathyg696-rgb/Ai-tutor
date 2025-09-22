@@ -52,6 +52,10 @@ def is_educational_content(message: str) -> bool:
         'art', 'music', 'dance', 'drama', 'theater', 'fine arts',
         'physical education', 'sports', 'health', 'nutrition',
         
+        # Biology/Human body terms
+        'bone', 'bones', 'skeleton', 'human body', 'anatomy', 'physiology',
+        'organs', 'muscles', 'blood', 'heart', 'brain', 'lungs',
+        
         # Technology & AI topics
         'computer science', 'information technology', 'software engineering',
         'artificial intelligence', 'ai', 'machine learning', 'data science',
@@ -92,19 +96,20 @@ def is_educational_content(message: str) -> bool:
     # For ambiguous content, check if it seems academic
     academic_indicators = ['what is', 'explain', 'how to', 'define', 'solve', 'calculate', 
                           'difference between', 'types of', 'examples of', 'formula for',
-                          'meaning of', 'understand', 'learn about', 'tell me about']
+                          'meaning of', 'understand', 'learn about', 'tell me about',
+                          'which is', 'what are', 'how many', 'where is', 'when was']
     
     if any(indicator in message_lower for indicator in academic_indicators):
         return True
     
     # Be permissive for short questions that might be educational
-    if len(message.split()) <= 5:
+    if len(message.split()) <= 8:
         return True
     
     # Default to allowing content (educational focus)
     return True
 
-# Main route - serves the complete HTML page with attractive UI and proper typing effect
+# Main route - serves the complete HTML page with fixed send button
 @app.route("/")
 def index():
     return '''
@@ -587,7 +592,7 @@ def index():
       <div class="welcome-message">
         <div class="icon">🎓</div>
         <h3>Welcome to EduBot!</h3>
-        <p>I'm your academic AI tutor here to help you with any educational questions. Whether it's homework, exam prep, or just curiosity about a topic - I'm here to make learning clear and engaging!</p>
+        <p>I'm your academic AI tutor here to help you with any educational questions. Whether it's homework, exam prep, or just curiosity about a topic - I'm here to give clear, direct answers!</p>
         <br>
         <p>Ask me anything academic!</p>
       </div>
@@ -628,8 +633,16 @@ def index():
 
     let currentChatId = null;
 
-    input.addEventListener('input', () => {
-      sendBtn.disabled = !input.value.trim();
+    // Fix send button enabling/disabling
+    function updateSendButton() {
+      const hasText = input.value.trim().length > 0;
+      sendBtn.disabled = !hasText;
+    }
+
+    input.addEventListener('input', updateSendButton);
+    input.addEventListener('keyup', updateSendButton);
+    input.addEventListener('paste', () => {
+      setTimeout(updateSendButton, 10);
     });
 
     function stripMarkdown(text) {
@@ -719,7 +732,7 @@ def index():
       clearWelcome();
       addMessage(question, true);
       input.value = '';
-      sendBtn.disabled = true;
+      updateSendButton(); // Update button state after clearing input
 
       const level = levelSelect.value;
       addTypingIndicator();
@@ -816,14 +829,15 @@ def index():
       }
     });
 
-    // Auto-focus input
+    // Auto-focus input and set initial button state
     input.focus();
+    updateSendButton();
   </script>
 </body>
 </html>
     '''
 
-# Chat endpoint with conversational responses WITHOUT emojis
+# Chat endpoint with DIRECT, CONCISE responses
 @app.route("/chat", methods=["POST"])
 def chat() -> tuple:
     data = request.get_json(silent=True) or {}
@@ -838,10 +852,10 @@ def chat() -> tuple:
     greetings = ['hi', 'hello', 'hey', 'hii', 'greetings', 'good morning', 'good afternoon', 'good evening', 'namaste']
     if user_message.lower().strip() in greetings:
         friendly_responses = [
-            "Hello! I'm EduBot, your academic AI tutor. What would you like to learn about today?",
-            "Hi there! Great to see you here! I'm ready to help you with any academic questions you have.",
-            "Hello! I'm EduBot and I love helping students learn. What subject can I help you with?",
-            "Hey! Ready to learn something interesting today? Just ask me any academic question!",
+            "Hello! I'm EduBot, your academic AI tutor. What would you like to learn about?",
+            "Hi there! Ready to help with any academic questions you have.",
+            "Hello! Ask me about any subject and I'll give you a clear answer.",
+            "Hey! What academic topic can I help you with today?",
         ]
         import random
         return jsonify({
@@ -858,7 +872,7 @@ def chat() -> tuple:
             "chat_id": chat_id,
             "reply": {
                 "message_id": new_id(),
-                "content": "I'm designed to be your academic helper! Ask me about any school or college subject, and I'll do my best to explain it clearly. What would you like to learn about?"
+                "content": "I'm designed to help with academic subjects only. Ask me about any school or college topic!"
             }
         }), 200
 
@@ -866,73 +880,54 @@ def chat() -> tuple:
         {"role": "user", "content": user_message, "message_id": new_id()}
     )
 
-    # System prompts WITHOUT emojis - more conversational and humanized
+    # UPDATED System prompts for DIRECT, CONCISE answers
     if level == "school":
-        system_prompt = """You are EduBot, a friendly and encouraging AI tutor for school students. You should be:
-
-PERSONALITY & TONE:
-- Warm, encouraging, and supportive like a helpful teacher
-- Use casual, conversational language that's easy to understand
-- Be enthusiastic about learning and show genuine interest in helping
-- NEVER use emojis in your responses
-- Keep responses concise but comprehensive (2-4 paragraphs max)
-
-TEACHING APPROACH:
-- Explain concepts in simple, relatable terms
-- Use everyday examples students can connect with
-- Break complex topics into bite-sized pieces
-- Always encourage questions and curiosity
-- Avoid being too formal or academic in tone
+        system_prompt = """You are EduBot, an academic AI tutor for school students. Follow these rules:
 
 RESPONSE STYLE:
-- Start with a friendly acknowledgment of their question
-- Give clear, practical explanations
-- Use analogies and real-world examples
-- End with encouragement or an invitation to ask more
-- Keep it conversational, not like a textbook
+- Give DIRECT, CONCISE answers
+- For simple factual questions (like "which is the smallest bone"), answer ONLY that specific question
+- No emojis whatsoever
+- Keep responses short and to the point
+- Only elaborate if the question specifically asks for explanation
 
-IMPORTANT: 
-- NO emojis whatsoever in responses
-- Keep responses shorter and more conversational
-- Aim for 3-5 sentences that directly answer their question in a friendly, helpful way
+ANSWER LENGTH:
+- For factual questions: 1-2 sentences maximum
+- For complex topics: 2-3 sentences maximum
+- Only provide what was specifically asked
 
-Example tone: "Great question! AI is basically like having a really smart assistant that can learn and solve problems. Think of it like..." 
+EXAMPLES:
+- Question: "Which is the smallest bone in human body?"
+- Answer: "The stapes bone in the middle ear is the smallest bone in the human body."
 
-Remember: You're their friendly study buddy, not a formal teacher."""
+- Question: "What is photosynthesis?"
+- Answer: "Photosynthesis is the process by which plants use sunlight, water, and carbon dioxide to produce glucose and oxygen."
+
+Remember: Be direct and concise. Answer only what's asked."""
 
     else:  # college level
-        system_prompt = """You are EduBot, a knowledgeable yet approachable AI tutor for college students. You should be:
-
-PERSONALITY & TONE:
-- Professional but friendly and approachable
-- Confident in your knowledge while remaining humble
-- Use clear, articulate language appropriate for college level
-- Show enthusiasm for deeper learning and critical thinking
-- NEVER use emojis in your responses
-- Keep responses focused and practical (3-5 paragraphs max)
-
-TEACHING APPROACH:
-- Provide comprehensive but concise explanations
-- Include relevant technical details without overwhelming
-- Make connections between concepts when helpful
-- Encourage analytical thinking and further exploration
-- Balance depth with accessibility
+        system_prompt = """You are EduBot, an academic AI tutor for college students. Follow these rules:
 
 RESPONSE STYLE:
-- Acknowledge their question thoughtfully
-- Provide structured, logical explanations
-- Include practical applications when relevant
-- Suggest areas for further study if appropriate
-- Maintain an encouraging, collaborative tone
+- Give DIRECT, PRECISE answers
+- For simple factual questions, provide concise factual answers
+- No emojis whatsoever
+- Be accurate and specific
+- Only elaborate if the question asks for detailed explanation
 
-IMPORTANT: 
-- NO emojis whatsoever in responses
-- Keep responses conversational yet informative
-- Aim for 4-8 sentences that provide solid understanding without being overwhelming
+ANSWER LENGTH:
+- For factual questions: 1-2 sentences maximum
+- For complex topics: 2-4 sentences maximum
+- Include technical terms when appropriate but keep it concise
 
-Example tone: "That's an excellent question about AI! Artificial Intelligence refers to systems that can perform tasks requiring human-like intelligence..."
+EXAMPLES:
+- Question: "Which is the smallest bone in human body?"
+- Answer: "The stapes (stirrup bone) in the middle ear is the smallest bone in the human body, measuring approximately 2-3mm in length."
 
-Remember: You're a knowledgeable mentor who makes complex topics accessible and engaging."""
+- Question: "What is artificial intelligence?"
+- Answer: "Artificial Intelligence is the simulation of human intelligence in machines that are programmed to think, learn, and make decisions like humans."
+
+Remember: Be precise and direct. Answer exactly what's asked without unnecessary elaboration."""
 
     messages = [{"role": "system", "content": system_prompt}] + [
         {"role": m["role"], "content": m["content"]} for m in chat_histories[chat_id]
@@ -942,15 +937,15 @@ Remember: You're a knowledgeable mentor who makes complex topics accessible and 
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
-            temperature=0.7,  # Higher for more natural, conversational responses
-            max_tokens=300,   # Reduced for shorter, more concise responses
-            presence_penalty=0.2,
+            temperature=0.3,  # Lower temperature for more precise, direct answers
+            max_tokens=150,   # REDUCED for concise responses
+            presence_penalty=0.1,
             frequency_penalty=0.1
         )
         bot_reply = response.choices[0].message.content.strip()
 
     except OpenAIError as e:
-        return jsonify({"error": "I'm having trouble thinking right now. Can you try asking again?"}), 502
+        return jsonify({"error": "I'm having trouble right now. Please try asking again."}), 502
 
     assistant_msg = {"role": "assistant", "content": bot_reply, "message_id": new_id()}
     chat_histories[chat_id].append(assistant_msg)
