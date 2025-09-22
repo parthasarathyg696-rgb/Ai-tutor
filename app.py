@@ -144,7 +144,7 @@ def is_educational_content(message: str) -> bool:
     # Default to allowing (educational bias)
     return True
 
-# Production-level HTML with enhanced features
+# FIXED HTML with corrected JavaScript
 @app.route("/")
 def index():
     return '''
@@ -171,7 +171,6 @@ def index():
       justify-content: center;
       align-items: center;
       padding: 20px;
-      overflow-x: hidden;
     }
 
     .chat-container {
@@ -180,15 +179,11 @@ def index():
       background: rgba(255, 255, 255, 0.98);
       backdrop-filter: blur(25px);
       border-radius: 24px;
-      box-shadow: 
-        0 40px 80px rgba(0, 0, 0, 0.12),
-        0 20px 40px rgba(0, 0, 0, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.12);
       display: flex;
       flex-direction: column;
       overflow: hidden;
       border: 1px solid rgba(255, 255, 255, 0.3);
-      position: relative;
     }
 
     .header {
@@ -196,7 +191,6 @@ def index():
       color: #ffffff;
       padding: 28px 36px;
       text-align: center;
-      position: relative;
     }
 
     .header h1 {
@@ -212,7 +206,6 @@ def index():
     .header .subtitle {
       font-size: 15px;
       opacity: 0.92;
-      font-weight: 400;
     }
 
     .logo-icon {
@@ -224,7 +217,6 @@ def index():
       align-items: center;
       justify-content: center;
       font-size: 22px;
-      backdrop-filter: blur(15px);
     }
 
     .notice {
@@ -234,12 +226,6 @@ def index():
       font-size: 14px;
       text-align: center;
       font-weight: 500;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-    }
-
-    .notice i {
-      margin-right: 10px;
-      color: #667eea;
     }
 
     #chatWindow {
@@ -247,7 +233,6 @@ def index():
       overflow-y: auto;
       padding: 28px;
       background: #fafbfc;
-      position: relative;
       scroll-behavior: smooth;
     }
 
@@ -296,7 +281,6 @@ def index():
       line-height: 1.6;
       word-wrap: break-word;
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-      position: relative;
     }
 
     .message.user .message-content {
@@ -384,14 +368,7 @@ def index():
       font-weight: 500;
       background: white;
       cursor: pointer;
-      transition: all 0.3s ease;
       min-width: 160px;
-    }
-
-    #levelSelect:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
     }
 
     .input-container {
@@ -407,7 +384,6 @@ def index():
       font-size: 15px;
       font-family: inherit;
       background: rgba(255, 255, 255, 0.9);
-      transition: all 0.3s ease;
     }
 
     #questionInput:focus {
@@ -415,10 +391,6 @@ def index():
       border-color: #667eea;
       box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
       background: white;
-    }
-
-    #questionInput::placeholder {
-      color: #a0a0a0;
     }
 
     #sendBtn {
@@ -438,18 +410,15 @@ def index():
       justify-content: center;
       font-size: 16px;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
     }
 
     #sendBtn:hover:not(:disabled) {
       transform: translateY(-50%) scale(1.05);
-      box-shadow: 0 6px 18px rgba(102, 126, 234, 0.45);
     }
 
     #sendBtn:disabled {
       background: #d1d5db;
       cursor: not-allowed;
-      box-shadow: none;
       transform: translateY(-50%);
     }
 
@@ -466,19 +435,12 @@ def index():
       border-radius: 22px;
       font-size: 13px;
       font-weight: 500;
-      border: 1px solid rgba(102, 126, 234, 0.15);
     }
 
     .welcome-message {
       text-align: center;
       padding: 48px 24px;
       color: #6b7280;
-    }
-
-    .welcome-message .icon {
-      font-size: 56px;
-      color: #667eea;
-      margin-bottom: 20px;
     }
 
     .welcome-message h3 {
@@ -493,15 +455,6 @@ def index():
       line-height: 1.7;
       max-width: 520px;
       margin: 0 auto;
-    }
-
-    .typing-effect {
-      animation: typing-cursor 1.2s infinite;
-    }
-
-    @keyframes typing-cursor {
-      0%, 50% { border-right: 2px solid transparent; }
-      51%, 100% { border-right: 2px solid #667eea; }
     }
 
     .follow-up-suggestions {
@@ -524,47 +477,18 @@ def index():
 
     .follow-up-btn:hover {
       background: rgba(102, 126, 234, 0.12);
-      border-color: rgba(102, 126, 234, 0.3);
     }
 
     @media (max-width: 768px) {
       body { padding: 12px; }
       .chat-container { border-radius: 18px; }
-      .header { padding: 24px; }
-      .header h1 { font-size: 26px; }
       #chatWindow { height: 380px; padding: 20px; }
       .input-area { padding: 20px; }
       .input-row { flex-direction: column; align-items: stretch; }
-      .message-content { max-width: 88%; }
-    }
-
-    .connection-status {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 500;
-      display: none;
-    }
-
-    .connection-status.connecting {
-      background: #fbbf24;
-      color: #92400e;
-      display: block;
-    }
-
-    .connection-status.error {
-      background: #f87171;
-      color: #991b1b;
-      display: block;
     }
   </style>
 </head>
 <body>
-  <div class="connection-status" id="connectionStatus"></div>
-  
   <div class="chat-container">
     <div class="header">
       <h1>
@@ -578,14 +502,13 @@ def index():
     
     <div class="notice">
       <i class="fas fa-university"></i>
-      Advanced AI tutor for all academic subjects - Ask questions and get detailed follow-up assistance
+      Ask me any academic question - I provide detailed answers with follow-up suggestions
     </div>
     
     <div id="chatWindow">
       <div class="welcome-message">
-        <div class="icon">🎓</div>
         <h3>Welcome to EduBot!</h3>
-        <p>I'm your professional AI academic tutor with advanced capabilities. I provide comprehensive answers and can handle follow-up questions to deepen your understanding. Ask me anything about any academic subject!</p>
+        <p>I'm your professional AI academic tutor. Ask me anything about any subject and I'll provide comprehensive answers with follow-up questions to deepen your understanding.</p>
       </div>
     </div>
 
@@ -598,7 +521,7 @@ def index():
         </select>
         
         <div class="input-container">
-          <input id="questionInput" type="text" placeholder="Ask your academic question..." autocomplete="off" />
+          <input id="questionInput" type="text" placeholder="Ask your academic question..." />
           <button id="sendBtn" disabled>
             <i class="fas fa-paper-plane"></i>
           </button>
@@ -606,260 +529,177 @@ def index():
       </div>
       
       <div class="features">
-        <span class="feature-tag">Mathematics & Statistics</span>
-        <span class="feature-tag">Sciences & Engineering</span>
-        <span class="feature-tag">Languages & Literature</span>
-        <span class="feature-tag">History & Social Studies</span>
-        <span class="feature-tag">Computer Science & AI</span>
+        <span class="feature-tag">Math & Science</span>
+        <span class="feature-tag">Languages</span>
+        <span class="feature-tag">History</span>
+        <span class="feature-tag">Computer Science</span>
         <span class="feature-tag">Follow-up Questions</span>
       </div>
     </div>
   </div>
 
   <script>
-    // Production-level JavaScript with enhanced features
-    class EduBotChat {
-      constructor() {
-        this.chatWindow = document.getElementById('chatWindow');
-        this.input = document.getElementById('questionInput');
-        this.sendBtn = document.getElementById('sendBtn');
-        this.levelSelect = document.getElementById('levelSelect');
-        this.connectionStatus = document.getElementById('connectionStatus');
-        
-        this.currentChatId = null;
-        this.isTyping = false;
-        this.retryAttempts = 0;
-        this.maxRetries = 3;
-        
-        this.init();
-      }
+    // FIXED JavaScript - Removed syntax errors
+    const chatWindow = document.getElementById('chatWindow');
+    const input = document.getElementById('questionInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const levelSelect = document.getElementById('levelSelect');
 
-      init() {
-        this.setupEventListeners();
-        this.updateSendButton();
-        this.input.focus();
-        
-        // Cleanup old chats periodically
-        setInterval(() => this.cleanupOldMessages(), 300000); // 5 minutes
-      }
+    let currentChatId = null;
+    let isTyping = false;
 
-      setupEventListeners() {
-        this.input.addEventListener('input', () => this.updateSendButton());
-        this.input.addEventListener('keydown', (e) => this.handleKeyDown(e));
-        this.sendBtn.addEventListener('click', () => this.sendMessage());
-        
-        // Handle visibility change to pause/resume
-        document.addEventListener('visibilitychange', () => {
-          if (!document.hidden) {
-            this.updateConnectionStatus();
-          }
-        });
-      }
-
-      updateSendButton() {
-        const hasText = this.input.value.trim().length > 0;
-        this.sendBtn.disabled = !hasText || this.isTyping;
-      }
-
-      handleKeyDown(e) {
-        if (e.key === 'Enter' && !this.sendBtn.disabled) {
-          e.preventDefault();
-          this.sendMessage();
-        }
-      }
-
-      updateConnectionStatus(status = 'connected', message = '') {
-        this.connectionStatus.className = `connection-status ${status}`;
-        this.connectionStatus.textContent = message;
-        
-        if (status === 'connected') {
-          setTimeout(() => {
-            this.connectionStatus.style.display = 'none';
-          }, 2000);
-        }
-      }
-
-      clearWelcome() {
-        const welcome = this.chatWindow.querySelector('.welcome-message');
-        if (welcome) {
-          welcome.remove();
-        }
-      }
-
-      addMessage(text, isUser, followUpSuggestions = []) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-        
-        const avatar = document.createElement('div');
-        avatar.className = 'message-avatar';
-        avatar.textContent = isUser ? 'U' : 'AI';
-        
-        const content = document.createElement('div');
-        content.className = 'message-content';
-        
-        if (isUser) {
-          content.textContent = text;
-        } else {
-          this.typeMessage(content, text, () => {
-            if (followUpSuggestions.length > 0) {
-              this.addFollowUpSuggestions(messageDiv, followUpSuggestions);
-            }
-          });
-        }
-        
-        messageDiv.appendChild(avatar);
-        messageDiv.appendChild(content);
-        this.chatWindow.appendChild(messageDiv);
-        
-        this.scrollToBottom();
-      }
-
-      typeMessage(element, text, callback = null) {
-        element.innerHTML = '';
-        element.classList.add('typing-effect');
-        
-        const words = text.split(' ');
-        let currentWordIndex = 0;
-        
-        const typeWord = () => {
-          if (currentWordIndex < words.length) {
-            element.innerHTML += (currentWordIndex > 0 ? ' ' : '') + words[currentWordIndex];
-            currentWordIndex++;
-            setTimeout(typeWord, 50);
-          } else {
-            element.classList.remove('typing-effect');
-            if (callback) callback();
-          }
-        };
-        
-        typeWord();
-      }
-
-      addFollowUpSuggestions(messageDiv, suggestions) {
-        const suggestionsDiv = document.createElement('div');
-        suggestionsDiv.className = 'follow-up-suggestions';
-        
-        suggestions.forEach(suggestion => {
-          const btn = document.createElement('button');
-          btn.className = 'follow-up-btn';
-          btn.textContent = suggestion;
-          btn.addEventListener('click', () => {
-            this.input.value = suggestion;
-            this.updateSendButton();
-            this.sendMessage();
-          });
-          suggestionsDiv.appendChild(btn);
-        });
-        
-        messageDiv.appendChild(suggestionsDiv);
-      }
-
-      addTypingIndicator() {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message bot typing-message';
-        messageDiv.innerHTML = `
-          <div class="message-avatar">AI</div>
-          <div class="message-content">
-            <div class="typing-indicator">
-              <div class="typing-dot"></div>
-              <div class="typing-dot"></div>
-              <div class="typing-dot"></div>
-            </div>
-          </div>
-        `;
-        this.chatWindow.appendChild(messageDiv);
-        this.scrollToBottom();
-      }
-
-      removeTypingIndicator() {
-        const typingMsg = this.chatWindow.querySelector('.typing-message');
-        if (typingMsg) {
-          typingMsg.remove();
-        }
-      }
-
-      scrollToBottom() {
-        this.chatWindow.scrollTop = this.chatWindow.scrollHeight;
-      }
-
-      cleanupOldMessages() {
-        const messages = this.chatWindow.querySelectorAll('.message');
-        if (messages.length > 50) {
-          // Keep only the latest 40 messages
-          for (let i = 0; i < messages.length - 40; i++) {
-            messages[i].remove();
-          }
-        }
-      }
-
-      async sendMessage() {
-        const question = this.input.value.trim();
-        if (!question || this.isTyping) return;
-
-        this.isTyping = true;
-        this.clearWelcome();
-        this.addMessage(question, true);
-        
-        this.input.value = '';
-        this.updateSendButton();
-        
-        const level = this.levelSelect.value;
-        this.addTypingIndicator();
-        this.updateConnectionStatus('connecting', 'Connecting...');
-
-        try {
-          const response = await fetch('/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: question,
-              level: level,
-              chat_id: this.currentChatId
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-
-          const data = await response.json();
-          this.removeTypingIndicator();
-          
-          if (data.error) {
-            this.addMessage(`I apologize, but I encountered an error: ${data.error}`, false);
-          } else {
-            this.currentChatId = data.chat_id;
-            const followUpSuggestions = data.follow_up_suggestions || [];
-            this.addMessage(data.reply.content, false, followUpSuggestions);
-          }
-          
-          this.updateConnectionStatus('connected');
-          this.retryAttempts = 0;
-          
-        } catch (error) {
-          this.removeTypingIndicator();
-          
-          if (this.retryAttempts < this.maxRetries) {
-            this.retryAttempts++;
-            this.updateConnectionStatus('connecting', `Retrying... (${this.retryAttempts}/${this.maxRetries})`);
-            setTimeout(() => this.sendMessage(), 2000);
-            return;
-          }
-          
-          this.addMessage('I apologize, but I\'m having connection issues. Please try again in a moment.', false);
-          this.updateConnectionStatus('error', 'Connection failed');
-          this.retryAttempts = 0;
-        } finally {
-          this.isTyping = false;
-          this.updateSendButton();
-        }
+    // Simple and reliable button state management
+    function updateSendButton() {
+      const hasText = input.value.trim().length > 0;
+      sendBtn.disabled = !hasText || isTyping;
+      
+      if (hasText && !isTyping) {
+        sendBtn.style.opacity = '1';
+        sendBtn.style.cursor = 'pointer';
+      } else {
+        sendBtn.style.opacity = '0.5';
+        sendBtn.style.cursor = 'not-allowed';
       }
     }
 
-    // Initialize the chat application
-    document.addEventListener('DOMContentLoaded', () => {
-      new EduBotChat();
+    // Event listeners
+    input.addEventListener('input', updateSendButton);
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !sendBtn.disabled) {
+        e.preventDefault();
+        sendMessage();
+      }
     });
+
+    sendBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (!sendBtn.disabled) {
+        sendMessage();
+      }
+    });
+
+    function clearWelcome() {
+      const welcome = chatWindow.querySelector('.welcome-message');
+      if (welcome) {
+        welcome.remove();
+      }
+    }
+
+    function addMessage(text, isUser, followUpSuggestions) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message ' + (isUser ? 'user' : 'bot');
+      
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = isUser ? 'U' : 'AI';
+      
+      const content = document.createElement('div');
+      content.className = 'message-content';
+      
+      if (isUser) {
+        content.textContent = text;
+      } else {
+        content.innerHTML = text.replace(/\\n/g, '<br>');
+        
+        // Add follow-up suggestions if provided
+        if (followUpSuggestions && followUpSuggestions.length > 0) {
+          const suggestionsDiv = document.createElement('div');
+          suggestionsDiv.className = 'follow-up-suggestions';
+          
+          followUpSuggestions.forEach(function(suggestion) {
+            const btn = document.createElement('button');
+            btn.className = 'follow-up-btn';
+            btn.textContent = suggestion;
+            btn.addEventListener('click', function() {
+              input.value = suggestion;
+              updateSendButton();
+              sendMessage();
+            });
+            suggestionsDiv.appendChild(btn);
+          });
+          
+          content.appendChild(suggestionsDiv);
+        }
+      }
+      
+      messageDiv.appendChild(avatar);
+      messageDiv.appendChild(content);
+      chatWindow.appendChild(messageDiv);
+      
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function addTypingIndicator() {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message bot typing-message';
+      messageDiv.innerHTML = '<div class="message-avatar">AI</div><div class="message-content"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+      chatWindow.appendChild(messageDiv);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const typingMsg = chatWindow.querySelector('.typing-message');
+      if (typingMsg) {
+        typingMsg.remove();
+      }
+    }
+
+    async function sendMessage() {
+      const question = input.value.trim();
+      if (!question || isTyping) {
+        return;
+      }
+
+      isTyping = true;
+      clearWelcome();
+      addMessage(question, true);
+      
+      input.value = '';
+      updateSendButton();
+      
+      const level = levelSelect.value;
+      addTypingIndicator();
+
+      try {
+        const response = await fetch('/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: question,
+            level: level,
+            chat_id: currentChatId
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+        removeTypingIndicator();
+        
+        if (data.error) {
+          addMessage('Sorry, I encountered an error: ' + data.error, false);
+        } else {
+          currentChatId = data.chat_id;
+          const followUpSuggestions = data.follow_up_suggestions || [];
+          addMessage(data.reply.content, false, followUpSuggestions);
+        }
+        
+      } catch (error) {
+        removeTypingIndicator();
+        addMessage('Sorry, I am having connection issues. Please try again.', false);
+      } finally {
+        isTyping = false;
+        updateSendButton();
+      }
+    }
+
+    // Initialize
+    updateSendButton();
+    input.focus();
   </script>
 </body>
 </html>
@@ -869,7 +709,7 @@ def index():
 @app.route("/chat", methods=["POST"])
 def chat() -> tuple:
     try:
-        cleanup_old_chats()  # Clean up old chats periodically
+        cleanup_old_chats()
         
         data = request.get_json(silent=True) or {}
         user_message: str | None = data.get("message")
@@ -929,108 +769,69 @@ def chat() -> tuple:
             "timestamp": datetime.now()
         })
 
-        # Enhanced system prompts based on level
+        # System prompt based on level
         if level == "school":
-            system_prompt = """You are EduBot, a professional AI academic tutor for school students. Follow these guidelines:
+            system_prompt = """You are EduBot, a professional AI academic tutor for school students. 
 
-CORE RESPONSIBILITIES:
-- Provide accurate, educational responses for school-level topics
-- Adapt explanations to appropriate grade level understanding
-- Encourage learning and curiosity
-- Be supportive and patient
-
-RESPONSE STYLE:
-- Clear, structured explanations
-- Use examples and analogies when helpful
-- Break complex topics into digestible parts
+GUIDELINES:
+- Provide clear, accurate educational responses
+- Use age-appropriate language
+- Give direct answers for factual questions
+- Provide comprehensive explanations for complex topics
 - No emojis in responses
-- Professional but friendly tone
+- Be encouraging and supportive
 
-ANSWER LENGTH:
-- For simple factual questions: 2-3 sentences with clear explanation
-- For complex topics: Comprehensive explanation with examples
-- Always ensure understanding before moving to advanced concepts
-
-FOLLOW-UP APPROACH:
-- Always consider what natural follow-up questions a student might have
-- Suggest 2-3 relevant follow-up questions when appropriate
-- Help students deepen their understanding progressively
-
-Remember: You're helping students learn effectively and build strong academic foundations."""
+RESPONSE LENGTH:
+- For simple facts: 1-2 sentences with brief explanation
+- For complex topics: 3-4 sentences with examples
+- Always ensure clarity and understanding"""
 
         elif level == "college":
-            system_prompt = """You are EduBot, a professional AI academic tutor for college students. Follow these guidelines:
+            system_prompt = """You are EduBot, a professional AI academic tutor for college students.
 
-CORE RESPONSIBILITIES:
+GUIDELINES:
 - Provide detailed, academic-level responses
 - Include technical terminology when appropriate
-- Reference established theories and principles
-- Support critical thinking and analysis
+- Give comprehensive explanations
+- Support critical thinking
+- No emojis in responses
+- Maintain professional academic tone
 
-RESPONSE STYLE:
-- Comprehensive and well-structured
-- Include relevant technical details
-- Make connections between concepts
-- Professional academic tone without emojis
-- Encourage deeper investigation
-
-ANSWER LENGTH:
-- For factual questions: Precise answer with context and implications
-- For complex topics: Thorough analysis with multiple perspectives
-- Include relevant examples and applications
-
-FOLLOW-UP APPROACH:
-- Suggest advanced follow-up questions
-- Encourage analytical thinking
-- Connect to broader academic concepts
-- Support research and deeper study
-
-Remember: You're supporting advanced learning and academic excellence."""
+RESPONSE LENGTH:
+- For factual questions: 2-3 sentences with context
+- For complex topics: 4-6 sentences with analysis
+- Include relevant examples and applications"""
 
         else:  # research level
-            system_prompt = """You are EduBot, a professional AI academic tutor for research-level inquiries. Follow these guidelines:
+            system_prompt = """You are EduBot, a professional AI academic tutor for research-level inquiries.
 
-CORE RESPONSIBILITIES:
+GUIDELINES:
 - Provide expert-level responses with academic rigor
-- Reference current research and methodologies
-- Support advanced analysis and critical evaluation
-- Maintain highest standards of accuracy
-
-RESPONSE STYLE:
-- Sophisticated and comprehensive
 - Include methodological considerations
-- Reference relevant literature concepts
-- Professional academic discourse
-- No emojis - maintain formal academic tone
+- Support advanced analysis
+- Maintain highest accuracy standards
+- No emojis in responses
+- Use formal academic discourse
 
-ANSWER LENGTH:
+RESPONSE LENGTH:
 - Detailed responses appropriate for research context
-- Include multiple perspectives and approaches
-- Discuss implications and applications
-- Address limitations and considerations
+- Include multiple perspectives when relevant
+- Address implications and applications"""
 
-FOLLOW-UP APPROACH:
-- Suggest research-oriented follow-up questions
-- Encourage methodological thinking
-- Connect to current academic discussions
-- Support independent research development
-
-Remember: You're facilitating advanced academic research and scholarly development."""
-
-        # Build conversation context (keep last 10 exchanges for context)
-        recent_messages = chat_histories[chat_id]['messages'][-20:]  # Last 10 exchanges
+        # Build conversation context
+        recent_messages = chat_histories[chat_id]['messages'][-10:]
         messages = [{"role": "system", "content": system_prompt}] + [
             {"role": m["role"], "content": m["content"]} 
             for m in recent_messages
         ]
 
-        # Generate response with appropriate parameters
+        # Generate response
         try:
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
-                temperature=0.4,  # Balanced creativity and accuracy
-                max_tokens=400,   # Comprehensive responses
+                temperature=0.4,
+                max_tokens=300,
                 presence_penalty=0.1,
                 frequency_penalty=0.1
             )
@@ -1070,9 +871,8 @@ Remember: You're facilitating advanced academic research and scholarly developme
         return jsonify({"error": "An unexpected error occurred. Please try again."}), 500
 
 def generate_follow_up_suggestions(user_question: str, bot_response: str, level: str) -> List[str]:
-    """Generate contextual follow-up questions based on the conversation"""
+    """Generate contextual follow-up questions"""
     
-    # Define follow-up patterns based on question types
     question_lower = user_question.lower()
     
     # Science topics
@@ -1113,8 +913,8 @@ def generate_follow_up_suggestions(user_question: str, bot_response: str, level:
             "What lessons can we learn from this?"
         ]
     
-    # Computer Science / Technology
-    elif any(word in question_lower for word in ['computer', 'programming', 'algorithm', 'ai', 'technology']):
+    # Computer Science
+    elif any(word in question_lower for word in ['computer', 'programming', 'algorithm', 'ai']):
         if level == "school":
             return [
                 "How do I get started with this?",
@@ -1128,34 +928,6 @@ def generate_follow_up_suggestions(user_question: str, bot_response: str, level:
                 "What are alternative approaches?"
             ]
     
-    # Literature
-    elif any(word in question_lower for word in ['literature', 'poem', 'novel', 'author', 'writing']):
-        return [
-            "What are the main themes?",
-            "How does this reflect the time period?",
-            "What techniques does the author use?"
-        ]
-    
-    # General follow-ups based on question type
-    elif question_lower.startswith(('what is', 'what are')):
-        return [
-            "How does this work in practice?",
-            "Why is this important?",
-            "Can you give me more examples?"
-        ]
-    elif question_lower.startswith(('how to', 'how do')):
-        return [
-            "What if I encounter problems?",
-            "Are there alternative methods?",
-            "What are the next steps?"
-        ]
-    elif question_lower.startswith(('why is', 'why does')):
-        return [
-            "What are the implications?",
-            "How does this affect other areas?",
-            "What would happen if this changed?"
-        ]
-    
     # Default follow-ups
     return [
         "Can you explain this further?",
@@ -1163,26 +935,13 @@ def generate_follow_up_suggestions(user_question: str, bot_response: str, level:
         "What should I learn next?"
     ]
 
-# Health check endpoint
 @app.route("/health")
 def health():
     return jsonify({
         "status": "healthy",
         "service": "EduBot - Professional AI Academic Tutor",
-        "version": "2.0",
-        "timestamp": datetime.now().isoformat(),
         "active_chats": len(chat_histories)
     }), 200
-
-# Error handlers
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({"error": "Endpoint not found"}), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    logger.error(f"Internal server error: {str(error)}")
-    return jsonify({"error": "Internal server error"}), 500
 
 # Get port from environment variable
 port = int(os.environ.get("PORT", 5000))
