@@ -62,7 +62,7 @@ def is_educational_content(message: str) -> bool:
     # If no clear indicators, assume educational (to be safe)
     return True
 
-# Main route - serves the complete HTML page
+# Main route - serves the complete HTML page with attractive UI
 @app.route("/")
 def index():
     return '''
@@ -70,112 +70,498 @@ def index():
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AI Education Tutor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduBot - AI Education Tutor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    body {
-      font-family: "Segoe UI", Tahoma, sans-serif;
-      background: #f4f6fb;
+    * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" patternUnits="userSpaceOnUse" width="100" height="100"><circle cx="25" cy="25" r="1" fill="%23ffffff" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="%23ffffff" opacity="0.05"/><circle cx="50" cy="10" r="0.5" fill="%23ffffff" opacity="0.08"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
+      pointer-events: none;
     }
 
     .chat-container {
-      width: 500px;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 800px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      box-shadow: 
+        0 32px 64px rgba(0, 0, 0, 0.15),
+        0 16px 32px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+    }
+
+    .chat-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+      animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
     }
 
     .header {
-      background: #4a90e2;
-      color: #fff;
-      padding: 15px;
-      font-size: 18px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      padding: 24px 32px;
       text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .header-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .header .subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      backdrop-filter: blur(10px);
     }
 
     .notice {
-      background: #e3f2fd;
+      background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
       color: #1565c0;
-      padding: 10px;
-      font-size: 12px;
+      padding: 16px 24px;
+      font-size: 13px;
       text-align: center;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      font-weight: 500;
+      position: relative;
+    }
+
+    .notice i {
+      margin-right: 8px;
+      color: #667eea;
     }
 
     #chatWindow {
-      height: 350px;
+      height: 450px;
       overflow-y: auto;
-      border: 1px solid #ccc;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .footer {
-      display: flex;
-      gap: 8px;
-      padding: 12px;
-      border-top: 1px solid #ddd;
+      padding: 24px;
       background: #fafafa;
+      position: relative;
+      scroll-behavior: smooth;
     }
 
-    #questionInput {
-      flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+    #chatWindow::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #chatWindow::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 3px;
+    }
+
+    #chatWindow::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 3px;
+    }
+
+    .message {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.user {
+      flex-direction: row-reverse;
+    }
+
+    .message-content {
+      max-width: 75%;
+      padding: 16px 20px;
+      border-radius: 20px;
       font-size: 14px;
+      line-height: 1.6;
+      position: relative;
+      word-wrap: break-word;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .message.user .message-content {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-bottom-right-radius: 6px;
+    }
+
+    .message.bot .message-content {
+      background: white;
+      color: #333;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-bottom-left-radius: 6px;
+    }
+
+    .message-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .message.user .message-avatar {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+
+    .message.bot .message-avatar {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+    }
+
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 16px;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #667eea;
+      animation: typing 1.4s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+      0%, 60%, 100% {
+        transform: scale(1);
+        opacity: 0.7;
+      }
+      30% {
+        transform: scale(1.3);
+        opacity: 1;
+      }
+    }
+
+    .input-area {
+      padding: 24px;
+      background: white;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      position: relative;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      margin-bottom: 16px;
+    }
+
+    .level-selector {
+      position: relative;
     }
 
     #levelSelect {
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+      padding: 12px 16px;
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
       font-size: 14px;
+      font-weight: 500;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 140px;
+    }
+
+    #levelSelect:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .input-container {
+      flex: 1;
+      position: relative;
+    }
+
+    #questionInput {
+      width: 100%;
+      padding: 16px 60px 16px 20px;
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      border-radius: 16px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    #questionInput:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      background: white;
+    }
+
+    #questionInput::placeholder {
+      color: #888;
+      font-weight: 400;
     }
 
     #sendBtn {
-      padding: 10px 16px;
-      background: #4a90e2;
-      color: white;
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border: none;
-      border-radius: 8px;
+      border-radius: 12px;
+      color: white;
       cursor: pointer;
-      font-size: 14px;
-      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    #sendBtn:hover:not(:disabled) {
+      transform: translateY(-50%) scale(1.05);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
     }
 
     #sendBtn:disabled {
-      background: #ccc;
+      background: linear-gradient(135deg, #ccc 0%, #999 100%);
       cursor: not-allowed;
+      box-shadow: none;
+      transform: translateY(-50%) scale(1);
     }
 
-    #sendBtn:hover:enabled {
-      background: #357ABD;
+    .features {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .feature-tag {
+      padding: 6px 12px;
+      background: rgba(102, 126, 234, 0.1);
+      color: #667eea;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .chat-container {
+        max-width: 100%;
+        border-radius: 16px;
+      }
+
+      .header {
+        padding: 20px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      #chatWindow {
+        height: 350px;
+        padding: 16px;
+      }
+
+      .input-area {
+        padding: 16px;
+      }
+
+      .input-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .message-content {
+        max-width: 85%;
+      }
+    }
+
+    .welcome-message {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+
+    .welcome-message .icon {
+      font-size: 48px;
+      color: #667eea;
+      margin-bottom: 16px;
+    }
+
+    .welcome-message h3 {
+      font-size: 20px;
+      color: #333;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .welcome-message p {
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 400px;
+      margin: 0 auto;
     }
   </style>
 </head>
 <body>
   <div class="chat-container">
-    <div class="header">📚 AI Education Tutor</div>
-    <div class="notice">This AI tutor only answers educational and academic questions</div>
-    <div id="chatWindow"></div>
+    <div class="header">
+      <div class="header-content">
+        <h1>
+          <div class="logo-icon">
+            <i class="fas fa-graduation-cap"></i>
+          </div>
+          EduBot
+        </h1>
+        <div class="subtitle">Your Personal AI Education Tutor</div>
+      </div>
+    </div>
+    
+    <div class="notice">
+      <i class="fas fa-info-circle"></i>
+      Specialized in Mathematics, Science, History, Literature, and all academic subjects
+    </div>
+    
+    <div id="chatWindow">
+      <div class="welcome-message">
+        <div class="icon">🎓</div>
+        <h3>Welcome to EduBot!</h3>
+        <p>I'm here to help you learn and understand academic concepts. Ask me questions about any educational topic, and I'll provide clear, detailed explanations tailored to your level.</p>
+      </div>
+    </div>
 
-    <div class="footer">
-      <select id="levelSelect">
-        <option value="beginner">Beginner Level</option>
-        <option value="advanced">Advanced Level</option>
-      </select>
-      <input id="questionInput" type="text" placeholder="Ask an educational question..." />
-      <button id="sendBtn" disabled>Send</button>
+    <div class="input-area">
+      <div class="input-row">
+        <div class="level-selector">
+          <select id="levelSelect">
+            <option value="beginner">📚 Beginner</option>
+            <option value="advanced">🎯 Advanced</option>
+          </select>
+        </div>
+        
+        <div class="input-container">
+          <input id="questionInput" type="text" placeholder="Ask me about any academic topic..." autocomplete="off" />
+          <button id="sendBtn" disabled>
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="features">
+        <span class="feature-tag">Mathematics</span>
+        <span class="feature-tag">Sciences</span>
+        <span class="feature-tag">History</span>
+        <span class="feature-tag">Literature</span>
+        <span class="feature-tag">Languages</span>
+        <span class="feature-tag">Computer Science</span>
+      </div>
     </div>
   </div>
 
@@ -187,7 +573,9 @@ def index():
 
     let currentChatId = null;
 
-    input.addEventListener('input', () => sendBtn.disabled = !input.value.trim());
+    input.addEventListener('input', () => {
+      sendBtn.disabled = !input.value.trim();
+    });
 
     function stripMarkdown(text) {
       return text
@@ -202,16 +590,24 @@ def index():
         .replace(/[*_]/g, '');
     }
 
+    function clearWelcome() {
+      const welcome = chatWindow.querySelector('.welcome-message');
+      if (welcome) {
+        welcome.remove();
+      }
+    }
+
     async function sendMessage() {
       const question = input.value.trim();
       if (!question) return;
       
+      clearWelcome();
       addMessage(question, true);
       input.value = '';
       sendBtn.disabled = true;
 
       const level = levelSelect.value;
-      addMessage('AI Tutor is analyzing your question...', false);
+      addTypingIndicator();
 
       try {
         const res = await fetch('/chat', {
@@ -225,66 +621,80 @@ def index():
         });
         
         const data = await res.json();
-        removeTypingMessage();
+        removeTypingIndicator();
         
         if (data.error) {
-          addMessage(`Error: ${data.error}`, false);
+          addMessage(`I apologize, but I encountered an error: ${data.error}`, false);
         } else {
           currentChatId = data.chat_id;
           addMessage(data.reply.content || "I apologize, but I can only help with educational topics.", false);
         }
       } catch (error) {
-        removeTypingMessage();
-        addMessage('Error connecting to tutor. Please try again.', false);
+        removeTypingIndicator();
+        addMessage('I apologize, but I\\'m having trouble connecting right now. Please try again in a moment.', false);
       }
     }
 
     function addMessage(text, isUser) {
-      const msg = document.createElement('div');
-      msg.style.padding = '8px';
-      msg.style.margin = '4px';
-      msg.style.backgroundColor = isUser ? '#0078d7' : '#e0e0e0';
-      msg.style.color = isUser ? 'white' : 'black';
-      msg.style.borderRadius = '10px';
-      msg.style.maxWidth = '80%';
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+      
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = isUser ? '👤' : '🤖';
+      
+      const content = document.createElement('div');
+      content.className = 'message-content';
       
       if (!isUser) {
         const cleanText = stripMarkdown(text);
-        msg.innerHTML = cleanText.replace(/\\n/g, '<br>');
-        msg.style.whiteSpace = 'normal';
-        msg.style.lineHeight = '1.4';
+        content.innerHTML = cleanText.replace(/\\n/g, '<br>');
       } else {
-        msg.textContent = text;
+        content.textContent = text;
       }
-
-      msg.style.alignSelf = isUser ? 'flex-end' : 'flex-start';
-      chatWindow.appendChild(msg);
-
-      const isAtBottom = chatWindow.scrollHeight - chatWindow.scrollTop <= chatWindow.clientHeight + 50;
-      if (isAtBottom) {
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-      }
+      
+      messageDiv.appendChild(avatar);
+      messageDiv.appendChild(content);
+      chatWindow.appendChild(messageDiv);
+      
+      chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    function removeTypingMessage() {
-      const msgs = chatWindow.childNodes;
-      if (msgs.length) {
-        const lastMsg = msgs[msgs.length - 1];
-        if (lastMsg.textContent === 'AI Tutor is analyzing your question...') {
-          chatWindow.removeChild(lastMsg);
-        }
+    function addTypingIndicator() {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message bot typing-message';
+      messageDiv.innerHTML = `
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+      `;
+      chatWindow.appendChild(messageDiv);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const typingMsg = chatWindow.querySelector('.typing-message');
+      if (typingMsg) {
+        typingMsg.remove();
       }
     }
 
     sendBtn.addEventListener('click', sendMessage);
+    
     input.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !sendBtn.disabled) sendMessage();
+      if (e.key === 'Enter' && !sendBtn.disabled) {
+        e.preventDefault();
+        sendMessage();
+      }
     });
 
-    // Add initial welcome message
-    window.onload = function() {
-      addMessage('Welcome! I am your AI Education Tutor. I can help you with academic subjects like Mathematics, Science, History, Literature, Languages, and more. Please ask me educational questions only.', false);
-    };
+    // Auto-focus input
+    input.focus();
   </script>
 </body>
 </html>
@@ -317,7 +727,7 @@ def chat() -> tuple:
 
     # Enhanced system prompts with strict educational focus
     if level == "beginner":
-        system_prompt = """You are an AI Education Tutor designed exclusively for educational purposes. You MUST follow these rules:
+        system_prompt = """You are EduBot, an AI Education Tutor designed exclusively for educational purposes. You MUST follow these rules:
 
 STRICT CONTENT RULES:
 - ONLY answer questions related to academic subjects: Mathematics, Science, History, Geography, Literature, Languages, Computer Science, Arts, Music, Philosophy, Psychology, Economics, Medicine, Engineering, Law, and other educational topics
@@ -349,7 +759,7 @@ Why It Matters: [Educational significance]
 Remember: You are here to educate and inspire learning in academic subjects only."""
 
     else:  # advanced level
-        system_prompt = """You are an AI Education Tutor designed exclusively for educational purposes. You MUST follow these rules:
+        system_prompt = """You are EduBot, an AI Education Tutor designed exclusively for educational purposes. You MUST follow these rules:
 
 STRICT CONTENT RULES:
 - ONLY answer questions related to academic subjects: Mathematics, Science, History, Geography, Literature, Languages, Computer Science, Arts, Music, Philosophy, Psychology, Economics, Medicine, Engineering, Law, and other educational topics
@@ -419,7 +829,7 @@ Remember: You are here to provide rigorous academic education in scholarly subje
 # Health check endpoint
 @app.route("/health")
 def health():
-    return jsonify({"status": "healthy", "service": "AI Education Tutor"}), 200
+    return jsonify({"status": "healthy", "service": "EduBot - AI Education Tutor"}), 200
 
 # Get port from environment variable
 port = int(os.environ.get("PORT", 5000))
