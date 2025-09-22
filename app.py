@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import uuid
-import time
 from typing import Dict, List
 
 from dotenv import load_dotenv
@@ -105,7 +104,7 @@ def is_educational_content(message: str) -> bool:
     # Default to allowing content (educational focus)
     return True
 
-# Main route - serves the complete HTML page with attractive UI and typing effect
+# Main route - serves the complete HTML page with attractive UI and proper typing effect
 @app.route("/")
 def index():
     return '''
@@ -556,7 +555,6 @@ def index():
     .typing-effect {
       overflow: hidden;
       border-right: 2px solid transparent;
-      white-space: nowrap;
       animation: typing-cursor 1s infinite;
     }
 
@@ -576,7 +574,7 @@ def index():
           </div>
           EduBot
         </h1>
-        <div class="subtitle">Your Friendly AI Tutor</div>
+        <div class="subtitle">Your Academic AI Tutor</div>
       </div>
     </div>
     
@@ -588,10 +586,10 @@ def index():
     <div id="chatWindow">
       <div class="welcome-message">
         <div class="icon">🎓</div>
-        <h3>Hey there! I'm EduBot!</h3>
-        <p>I'm your friendly AI tutor here to help you with any academic questions. Whether it's homework, exam prep, or just curiosity about a topic - I'm here to make learning fun and easy!</p>
+        <h3>Welcome to EduBot!</h3>
+        <p>I'm your academic AI tutor here to help you with any educational questions. Whether it's homework, exam prep, or just curiosity about a topic - I'm here to make learning clear and engaging!</p>
         <br>
-        <p>Go ahead, ask me anything! 😊</p>
+        <p>Ask me anything academic!</p>
       </div>
     </div>
 
@@ -599,13 +597,13 @@ def index():
       <div class="input-row">
         <div class="level-selector">
           <select id="levelSelect">
-            <option value="school">🏫 School</option>
-            <option value="college">🎓 College</option>
+            <option value="school">School Student</option>
+            <option value="college">College Student</option>
           </select>
         </div>
         
         <div class="input-container">
-          <input id="questionInput" type="text" placeholder="Ask me anything..." autocomplete="off" />
+          <input id="questionInput" type="text" placeholder="Ask me anything academic..." autocomplete="off" />
           <button id="sendBtn" disabled>
             <i class="fas fa-paper-plane"></i>
           </button>
@@ -636,14 +634,14 @@ def index():
 
     function stripMarkdown(text) {
       return text
-        .replace(/\\*\\*(.+?)\\*\\*/g, '$1')
+        .replace(/\*\*(.+?)\*\*/g, '$1')
         .replace(/__(.+?)__/g, '$1')
-        .replace(/\\*(.+?)\\*/g, '$1')
+        .replace(/\*(.+?)\*/g, '$1')
         .replace(/_(.+?)_/g, '$1')
         .replace(/~~(.+?)~~/g, '$1')
         .replace(/`(.+?)`/g, '$1')
-        .replace(/^#{1,6}\\s+(.+)$/gm, '$1')
-        .replace(/\\[(.+?)\\]\\(.+?\\)/g, '$1')
+        .replace(/^#{1,6}\s+(.+)$/gm, '$1')
+        .replace(/\[(.+?)\]\(.+?\)/g, '$1')
         .replace(/[*_]/g, '');
     }
 
@@ -654,21 +652,63 @@ def index():
       }
     }
 
-    // Typing effect function
-    function typeMessage(element, text, speed = 30) {
+    // Enhanced typing effect that handles line breaks properly
+    function typeMessage(element, text, speed = 25) {
       element.innerHTML = '';
-      let i = 0;
       element.classList.add('typing-effect');
       
+      // Convert <br> to actual line breaks for processing
+      const processedText = text.replace(/<br\s*\/?>/gi, '\n');
+      const lines = processedText.split('\n');
+      
+      let currentLineIndex = 0;
+      let currentCharIndex = 0;
+      let displayHTML = '';
+      
       function typeChar() {
-        if (i < text.length) {
-          element.innerHTML += text.charAt(i);
-          i++;
-          setTimeout(typeChar, speed);
-        } else {
-          element.classList.remove('typing-effect');
+        if (currentLineIndex < lines.length) {
+          const currentLine = lines[currentLineIndex];
+          
+          if (currentCharIndex < currentLine.length) {
+            // Add character to current line
+            currentCharIndex++;
+            
+            // Rebuild display HTML with current progress
+            displayHTML = '';
+            for (let i = 0; i <= currentLineIndex; i++) {
+              if (i < currentLineIndex) {
+                // Complete previous lines
+                displayHTML += lines[i];
+                if (i < lines.length - 1 && lines[i+1] !== '') displayHTML += '<br>';
+              } else {
+                // Current line being typed
+                displayHTML += lines[i].substring(0, currentCharIndex);
+              }
+            }
+            
+            element.innerHTML = displayHTML;
+            setTimeout(typeChar, speed);
+            
+          } else {
+            // Move to next line
+            currentLineIndex++;
+            currentCharIndex = 0;
+            
+            if (currentLineIndex < lines.length) {
+              // Add line break and pause before next line
+              if (lines[currentLineIndex] !== '') {
+                displayHTML += '<br>';
+                element.innerHTML = displayHTML;
+              }
+              setTimeout(typeChar, speed * 3); // Longer pause between lines
+            } else {
+              // Finished typing all lines
+              element.classList.remove('typing-effect');
+            }
+          }
         }
       }
+      
       typeChar();
     }
 
@@ -706,7 +746,7 @@ def index():
         }
       } catch (error) {
         removeTypingIndicator();
-        addMessage('Sorry, I\\'m having trouble connecting right now. Please try again!', false, true);
+        addMessage('Sorry, I\'m having trouble connecting right now. Please try again!', false, true);
       }
     }
 
@@ -716,18 +756,19 @@ def index():
       
       const avatar = document.createElement('div');
       avatar.className = 'message-avatar';
-      avatar.textContent = isUser ? '👤' : '🤖';
+      avatar.textContent = isUser ? 'U' : 'AI';
       
       const content = document.createElement('div');
       content.className = 'message-content';
       
       if (!isUser) {
         const cleanText = stripMarkdown(text);
-        const formattedText = cleanText.replace(/\\n/g, '<br>');
+        // Remove <br><br> and replace with single <br> for better formatting
+        const formattedText = cleanText.replace(/<br\s*\/?>\s*<br\s*\/?>/gi, '<br>');
         
         if (useTyping) {
           content.innerHTML = '';
-          typeMessage(content, formattedText, 20);
+          typeMessage(content, formattedText, 20); // Slightly faster for better UX
         } else {
           content.innerHTML = formattedText;
         }
@@ -746,7 +787,7 @@ def index():
       const messageDiv = document.createElement('div');
       messageDiv.className = 'message bot typing-message';
       messageDiv.innerHTML = `
-        <div class="message-avatar">🤖</div>
+        <div class="message-avatar">AI</div>
         <div class="message-content">
           <div class="typing-indicator">
             <div class="typing-dot"></div>
@@ -782,7 +823,7 @@ def index():
 </html>
     '''
 
-# Chat endpoint with more conversational, humanized responses
+# Chat endpoint with conversational responses WITHOUT emojis
 @app.route("/chat", methods=["POST"])
 def chat() -> tuple:
     data = request.get_json(silent=True) or {}
@@ -793,14 +834,14 @@ def chat() -> tuple:
     if not user_message:
         return jsonify({"error": "Please ask me something!"}), 400
 
-    # Handle simple greetings with friendly responses
+    # Handle simple greetings with friendly responses (NO EMOJIS)
     greetings = ['hi', 'hello', 'hey', 'hii', 'greetings', 'good morning', 'good afternoon', 'good evening', 'namaste']
     if user_message.lower().strip() in greetings:
         friendly_responses = [
-            "Hey there! 😊 I'm EduBot, your friendly AI tutor. What would you like to learn about today?",
-            "Hello! Great to see you here! I'm ready to help you with any academic questions you have.",
-            "Hi! I'm EduBot and I love helping students learn. What subject can I help you with?",
-            "Hey! Ready to learn something awesome today? Just ask me any academic question!",
+            "Hello! I'm EduBot, your academic AI tutor. What would you like to learn about today?",
+            "Hi there! Great to see you here! I'm ready to help you with any academic questions you have.",
+            "Hello! I'm EduBot and I love helping students learn. What subject can I help you with?",
+            "Hey! Ready to learn something interesting today? Just ask me any academic question!",
         ]
         import random
         return jsonify({
@@ -817,7 +858,7 @@ def chat() -> tuple:
             "chat_id": chat_id,
             "reply": {
                 "message_id": new_id(),
-                "content": "I'm designed to be your academic helper! 📚 Ask me about any school or college subject, and I'll do my best to explain it in a way that makes sense. What would you like to learn about?"
+                "content": "I'm designed to be your academic helper! Ask me about any school or college subject, and I'll do my best to explain it clearly. What would you like to learn about?"
             }
         }), 200
 
@@ -825,15 +866,15 @@ def chat() -> tuple:
         {"role": "user", "content": user_message, "message_id": new_id()}
     )
 
-    # More conversational and humanized system prompts
+    # System prompts WITHOUT emojis - more conversational and humanized
     if level == "school":
         system_prompt = """You are EduBot, a friendly and encouraging AI tutor for school students. You should be:
 
 PERSONALITY & TONE:
-- Warm, encouraging, and supportive like a helpful friend
+- Warm, encouraging, and supportive like a helpful teacher
 - Use casual, conversational language that's easy to understand
 - Be enthusiastic about learning and show genuine interest in helping
-- Use emojis occasionally to make conversations more engaging
+- NEVER use emojis in your responses
 - Keep responses concise but comprehensive (2-4 paragraphs max)
 
 TEACHING APPROACH:
@@ -850,7 +891,10 @@ RESPONSE STYLE:
 - End with encouragement or an invitation to ask more
 - Keep it conversational, not like a textbook
 
-IMPORTANT: Keep responses shorter and more conversational. Aim for 3-5 sentences that directly answer their question in a friendly, helpful way.
+IMPORTANT: 
+- NO emojis whatsoever in responses
+- Keep responses shorter and more conversational
+- Aim for 3-5 sentences that directly answer their question in a friendly, helpful way
 
 Example tone: "Great question! AI is basically like having a really smart assistant that can learn and solve problems. Think of it like..." 
 
@@ -864,6 +908,7 @@ PERSONALITY & TONE:
 - Confident in your knowledge while remaining humble
 - Use clear, articulate language appropriate for college level
 - Show enthusiasm for deeper learning and critical thinking
+- NEVER use emojis in your responses
 - Keep responses focused and practical (3-5 paragraphs max)
 
 TEACHING APPROACH:
@@ -880,7 +925,10 @@ RESPONSE STYLE:
 - Suggest areas for further study if appropriate
 - Maintain an encouraging, collaborative tone
 
-IMPORTANT: Keep responses conversational yet informative. Aim for 4-8 sentences that provide solid understanding without being overwhelming.
+IMPORTANT: 
+- NO emojis whatsoever in responses
+- Keep responses conversational yet informative
+- Aim for 4-8 sentences that provide solid understanding without being overwhelming
 
 Example tone: "That's an excellent question about AI! Artificial Intelligence refers to systems that can perform tasks requiring human-like intelligence..."
 
@@ -918,7 +966,7 @@ Remember: You're a knowledgeable mentor who makes complex topics accessible and 
 # Health check endpoint
 @app.route("/health")
 def health():
-    return jsonify({"status": "healthy", "service": "EduBot - Your Friendly AI Tutor"}), 200
+    return jsonify({"status": "healthy", "service": "EduBot - Academic AI Tutor"}), 200
 
 # Get port from environment variable
 port = int(os.environ.get("PORT", 5000))
