@@ -2,12 +2,18 @@ from __future__ import annotations
 
 import os
 import uuid
+import logging
 from typing import Dict, List
+from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from openai import OpenAI, OpenAIError
+
+# Configure logging for production
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -19,73 +25,106 @@ client = OpenAI(api_key=api_key)
 
 # Flask app setup
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["*"])
 
-# In-memory chat store
-chat_histories: Dict[str, List[dict]] = {}
+# Enhanced in-memory chat store with cleanup
+chat_histories: Dict[str, Dict] = {}
+CHAT_CLEANUP_HOURS = 24  # Clean up chats older than 24 hours
 
 def new_id() -> str:
     return str(uuid.uuid4())
 
-def is_educational_content(message: str) -> bool:
-    """Check if the message is educational/academic content for school or college"""
+def cleanup_old_chats():
+    """Clean up chat histories older than specified hours"""
+    current_time = datetime.now()
+    expired_chats = []
     
-    # Strictly non-educational content that should be blocked
+    for chat_id, chat_data in chat_histories.items():
+        if current_time - chat_data.get('created_at', current_time) > timedelta(hours=CHAT_CLEANUP_HOURS):
+            expired_chats.append(chat_id)
+    
+    for chat_id in expired_chats:
+        del chat_histories[chat_id]
+    
+    if expired_chats:
+        logger.info(f"Cleaned up {len(expired_chats)} expired chat sessions")
+
+def is_educational_content(message: str) -> bool:
+    """Enhanced educational content detection for production"""
+    
+    # Strictly blocked content
     blocked_keywords = [
-        'porn', 'sex', 'nude', 'explicit', 'adult content', 
-        'violence', 'kill', 'murder', 'weapon', 'bomb', 'terrorist',
-        'drug dealer', 'illegal drugs', 'cocaine', 'heroin',
-        'hack bank', 'steal money', 'credit card fraud',
-        'suicide', 'self harm', 'racist', 'hate speech'
+        'porn', 'sex', 'nude', 'explicit', 'adult content', 'sexual',
+        'violence', 'kill', 'murder', 'weapon', 'bomb', 'terrorist', 'hate',
+        'drug dealer', 'illegal drugs', 'cocaine', 'heroin', 'marijuana sale',
+        'hack bank', 'steal money', 'credit card fraud', 'illegal activity',
+        'suicide', 'self harm', 'racist', 'hate speech', 'discrimination'
     ]
     
-    # Educational topics for ALL school standards and college branches
+    # Comprehensive educational topics
     educational_topics = [
-        # Core School Subjects (All Standards 1-12)
+        # Core Academic Subjects
         'mathematics', 'math', 'algebra', 'geometry', 'calculus', 'trigonometry', 'statistics',
-        'physics', 'chemistry', 'biology', 'science', 'botany', 'zoology',
+        'physics', 'chemistry', 'biology', 'science', 'botany', 'zoology', 'ecology',
         'history', 'geography', 'civics', 'political science', 'social studies',
-        'english', 'literature', 'grammar', 'writing', 'reading', 'poetry',
-        'hindi', 'sanskrit', 'language', 'linguistics',
-        'economics', 'commerce', 'accounting', 'business studies',
-        'philosophy', 'psychology', 'sociology', 'anthropology',
-        'art', 'music', 'dance', 'drama', 'theater', 'fine arts',
-        'physical education', 'sports', 'health', 'nutrition',
+        'english', 'literature', 'grammar', 'writing', 'reading', 'poetry', 'linguistics',
+        'economics', 'commerce', 'accounting', 'business studies', 'finance',
+        'philosophy', 'psychology', 'sociology', 'anthropology', 'archaeology',
+        'art', 'music', 'dance', 'drama', 'theater', 'fine arts', 'design',
         
-        # Biology/Human body terms
-        'bone', 'bones', 'skeleton', 'human body', 'anatomy', 'physiology',
-        'organs', 'muscles', 'blood', 'heart', 'brain', 'lungs',
+        # STEM Fields
+        'computer science', 'programming', 'software engineering', 'data science',
+        'artificial intelligence', 'ai', 'machine learning', 'deep learning',
+        'algorithms', 'data structures', 'databases', 'networks', 'cybersecurity',
+        'engineering', 'mechanical', 'electrical', 'civil', 'chemical', 'aerospace',
+        'biotechnology', 'nanotechnology', 'robotics', 'automation',
         
-        # Technology & AI topics
-        'computer science', 'information technology', 'software engineering',
-        'artificial intelligence', 'ai', 'machine learning', 'data science',
-        'programming', 'python', 'java', 'c++', 'javascript', 'html', 'css',
-        'algorithms', 'data structures', 'operating systems',
-        'computer networks', 'cloud computing', 'blockchain',
+        # Medical & Health Sciences
+        'medicine', 'anatomy', 'physiology', 'pharmacology', 'pathology',
+        'dentistry', 'nursing', 'public health', 'nutrition', 'psychology',
+        'human body', 'organs', 'bones', 'muscles', 'blood', 'cells',
+        
+        # Languages & Communication
+        'languages', 'spanish', 'french', 'german', 'chinese', 'japanese',
+        'communication', 'public speaking', 'debate', 'journalism',
+        
+        # Research & Academic Skills
+        'research', 'thesis', 'dissertation', 'analysis', 'methodology',
+        'statistics', 'data analysis', 'academic writing', 'citations',
         
         # General Academic Terms
-        'study', 'learn', 'education', 'academic', 'school', 'college',
-        'university', 'degree', 'diploma', 'course', 'subject',
-        'exam', 'test', 'assignment', 'homework', 'project',
-        'research', 'thesis', 'dissertation', 'analysis',
-        'theory', 'concept', 'principle', 'formula', 'equation',
-        'definition', 'explanation', 'example', 'solution',
-        'problem solving', 'critical thinking', 'reasoning'
+        'study', 'learn', 'education', 'academic', 'school', 'college', 'university',
+        'exam', 'test', 'assignment', 'homework', 'project', 'quiz',
+        'concept', 'theory', 'principle', 'formula', 'equation', 'definition',
+        'explanation', 'example', 'solution', 'problem solving'
     ]
     
-    # Simple greetings and conversational starters
-    greetings = ['hi', 'hello', 'hey', 'hii', 'hello there', 'good morning', 
-                'good afternoon', 'good evening', 'namaste', 'greetings']
+    # Question indicators
+    academic_indicators = [
+        'what is', 'what are', 'explain', 'how to', 'how do', 'how does',
+        'define', 'definition of', 'meaning of', 'solve', 'calculate',
+        'difference between', 'compare', 'contrast', 'types of', 'kinds of',
+        'examples of', 'formula for', 'understand', 'learn about',
+        'tell me about', 'describe', 'which is', 'which are',
+        'where is', 'when was', 'when did', 'why is', 'why does',
+        'how many', 'how much', 'who is', 'who was', 'help me'
+    ]
+    
+    # Greetings
+    greetings = [
+        'hi', 'hello', 'hey', 'hii', 'hello there', 'good morning',
+        'good afternoon', 'good evening', 'namaste', 'greetings'
+    ]
     
     message_lower = message.lower().strip()
     
-    # Block only strictly inappropriate content
+    # Block inappropriate content
     for blocked in blocked_keywords:
         if blocked in message_lower:
             return False
     
     # Allow greetings
-    if any(greeting in message_lower for greeting in greetings):
+    if any(greeting == message_lower for greeting in greetings):
         return True
     
     # Allow educational content
@@ -93,23 +132,19 @@ def is_educational_content(message: str) -> bool:
         if topic in message_lower:
             return True
     
-    # For ambiguous content, check if it seems academic
-    academic_indicators = ['what is', 'explain', 'how to', 'define', 'solve', 'calculate', 
-                          'difference between', 'types of', 'examples of', 'formula for',
-                          'meaning of', 'understand', 'learn about', 'tell me about',
-                          'which is', 'what are', 'how many', 'where is', 'when was']
+    # Check for academic question patterns
+    for indicator in academic_indicators:
+        if indicator in message_lower:
+            return True
     
-    if any(indicator in message_lower for indicator in academic_indicators):
+    # Allow short questions (likely educational)
+    if len(message.split()) <= 10 and '?' in message:
         return True
     
-    # Be permissive for short questions that might be educational
-    if len(message.split()) <= 8:
-        return True
-    
-    # Default to allowing content (educational focus)
+    # Default to allowing (educational bias)
     return True
 
-# Main route - serves the complete HTML page with fixed send button
+# Production-level HTML with enhanced features
 @app.route("/")
 def index():
     return '''
@@ -118,7 +153,7 @@ def index():
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EduBot - Academic Tutor for Schools & Colleges</title>
+  <title>EduBot - AI Academic Tutor</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -136,164 +171,112 @@ def index():
       justify-content: center;
       align-items: center;
       padding: 20px;
-      position: relative;
       overflow-x: hidden;
-    }
-
-    body::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" patternUnits="userSpaceOnUse" width="100" height="100"><circle cx="25" cy="25" r="1" fill="%23ffffff" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="%23ffffff" opacity="0.05"/><circle cx="50" cy="10" r="0.5" fill="%23ffffff" opacity="0.08"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
-      pointer-events: none;
     }
 
     .chat-container {
       width: 100%;
-      max-width: 800px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
+      max-width: 900px;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(25px);
       border-radius: 24px;
       box-shadow: 
-        0 32px 64px rgba(0, 0, 0, 0.15),
-        0 16px 32px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        0 40px 80px rgba(0, 0, 0, 0.12),
+        0 20px 40px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
       position: relative;
-    }
-
-    .chat-container::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
-      animation: shimmer 3s ease-in-out infinite;
-    }
-
-    @keyframes shimmer {
-      0%, 100% { opacity: 0.6; }
-      50% { opacity: 1; }
     }
 
     .header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: #ffffff;
-      padding: 24px 32px;
+      padding: 28px 36px;
       text-align: center;
       position: relative;
-      overflow: hidden;
-    }
-
-    .header::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-      animation: rotate 20s linear infinite;
-    }
-
-    @keyframes rotate {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .header-content {
-      position: relative;
-      z-index: 2;
     }
 
     .header h1 {
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 700;
       margin-bottom: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 14px;
     }
 
     .header .subtitle {
-      font-size: 14px;
-      opacity: 0.9;
+      font-size: 15px;
+      opacity: 0.92;
       font-weight: 400;
-      letter-spacing: 0.5px;
     }
 
     .logo-icon {
-      width: 40px;
-      height: 40px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 12px;
+      width: 42px;
+      height: 42px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
-      backdrop-filter: blur(10px);
+      font-size: 22px;
+      backdrop-filter: blur(15px);
     }
 
     .notice {
-      background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+      background: linear-gradient(135deg, #e8f4fd 0%, #f8f0ff 100%);
       color: #1565c0;
-      padding: 16px 24px;
-      font-size: 13px;
+      padding: 18px 28px;
+      font-size: 14px;
       text-align: center;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       font-weight: 500;
-      position: relative;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
     }
 
     .notice i {
-      margin-right: 8px;
+      margin-right: 10px;
       color: #667eea;
     }
 
     #chatWindow {
-      height: 450px;
+      height: 480px;
       overflow-y: auto;
-      padding: 24px;
-      background: #fafafa;
+      padding: 28px;
+      background: #fafbfc;
       position: relative;
       scroll-behavior: smooth;
     }
 
     #chatWindow::-webkit-scrollbar {
-      width: 6px;
+      width: 8px;
     }
 
     #chatWindow::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.05);
-      border-radius: 3px;
+      background: rgba(0, 0, 0, 0.04);
+      border-radius: 4px;
     }
 
     #chatWindow::-webkit-scrollbar-thumb {
       background: linear-gradient(135deg, #667eea, #764ba2);
-      border-radius: 3px;
+      border-radius: 4px;
     }
 
     .message {
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       display: flex;
       align-items: flex-end;
-      gap: 12px;
-      animation: slideIn 0.3s ease-out;
+      gap: 14px;
+      animation: slideIn 0.4s ease-out;
     }
 
     @keyframes slideIn {
       from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(24px);
       }
       to {
         opacity: 1;
@@ -306,37 +289,37 @@ def index():
     }
 
     .message-content {
-      max-width: 75%;
-      padding: 16px 20px;
-      border-radius: 20px;
-      font-size: 14px;
+      max-width: 78%;
+      padding: 18px 22px;
+      border-radius: 22px;
+      font-size: 15px;
       line-height: 1.6;
-      position: relative;
       word-wrap: break-word;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+      position: relative;
     }
 
     .message.user .message-content {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      border-bottom-right-radius: 6px;
+      border-bottom-right-radius: 8px;
     }
 
     .message.bot .message-content {
       background: white;
-      color: #333;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-bottom-left-radius: 6px;
+      color: #2d3748;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-bottom-left-radius: 8px;
     }
 
     .message-avatar {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       flex-shrink: 0;
     }
@@ -354,20 +337,20 @@ def index():
     .typing-indicator {
       display: flex;
       align-items: center;
-      gap: 4px;
-      padding: 12px 16px;
+      gap: 6px;
+      padding: 14px 18px;
     }
 
     .typing-dot {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       background: #667eea;
-      animation: typing 1.4s infinite ease-in-out;
+      animation: typing 1.5s infinite ease-in-out;
     }
 
-    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    .typing-dot:nth-child(2) { animation-delay: 0.3s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.6s; }
 
     @keyframes typing {
       0%, 60%, 100% {
@@ -375,45 +358,40 @@ def index():
         opacity: 0.7;
       }
       30% {
-        transform: scale(1.3);
+        transform: scale(1.4);
         opacity: 1;
       }
     }
 
     .input-area {
-      padding: 24px;
+      padding: 28px;
       background: white;
-      border-top: 1px solid rgba(0, 0, 0, 0.06);
-      position: relative;
+      border-top: 1px solid rgba(0, 0, 0, 0.04);
     }
 
     .input-row {
       display: flex;
-      gap: 12px;
+      gap: 14px;
       align-items: flex-end;
-      margin-bottom: 16px;
-    }
-
-    .level-selector {
-      position: relative;
+      margin-bottom: 18px;
     }
 
     #levelSelect {
-      padding: 12px 16px;
-      border: 2px solid rgba(0, 0, 0, 0.1);
-      border-radius: 12px;
-      font-size: 14px;
+      padding: 14px 18px;
+      border: 2px solid rgba(0, 0, 0, 0.08);
+      border-radius: 14px;
+      font-size: 15px;
       font-weight: 500;
       background: white;
       cursor: pointer;
-      transition: all 0.2s ease;
-      min-width: 140px;
+      transition: all 0.3s ease;
+      min-width: 160px;
     }
 
     #levelSelect:focus {
       outline: none;
       border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
     }
 
     .input-container {
@@ -423,192 +401,204 @@ def index():
 
     #questionInput {
       width: 100%;
-      padding: 16px 60px 16px 20px;
-      border: 2px solid rgba(0, 0, 0, 0.1);
-      border-radius: 16px;
-      font-size: 14px;
+      padding: 18px 70px 18px 22px;
+      border: 2px solid rgba(0, 0, 0, 0.08);
+      border-radius: 18px;
+      font-size: 15px;
       font-family: inherit;
-      resize: none;
-      transition: all 0.2s ease;
-      background: rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.9);
+      transition: all 0.3s ease;
     }
 
     #questionInput:focus {
       outline: none;
       border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
       background: white;
     }
 
     #questionInput::placeholder {
-      color: #888;
-      font-weight: 400;
+      color: #a0a0a0;
     }
 
     #sendBtn {
       position: absolute;
-      right: 8px;
+      right: 10px;
       top: 50%;
       transform: translateY(-50%);
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       color: white;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 16px;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
     }
 
     #sendBtn:hover:not(:disabled) {
       transform: translateY(-50%) scale(1.05);
-      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 6px 18px rgba(102, 126, 234, 0.45);
     }
 
     #sendBtn:disabled {
-      background: linear-gradient(135deg, #ccc 0%, #999 100%);
+      background: #d1d5db;
       cursor: not-allowed;
       box-shadow: none;
-      transform: translateY(-50%) scale(1);
+      transform: translateY(-50%);
     }
 
     .features {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
     .feature-tag {
-      padding: 6px 12px;
-      background: rgba(102, 126, 234, 0.1);
+      padding: 8px 14px;
+      background: rgba(102, 126, 234, 0.08);
       color: #667eea;
-      border-radius: 20px;
-      font-size: 12px;
+      border-radius: 22px;
+      font-size: 13px;
       font-weight: 500;
-      border: 1px solid rgba(102, 126, 234, 0.2);
-    }
-
-    @media (max-width: 768px) {
-      body {
-        padding: 10px;
-      }
-
-      .chat-container {
-        max-width: 100%;
-        border-radius: 16px;
-      }
-
-      .header {
-        padding: 20px;
-      }
-
-      .header h1 {
-        font-size: 24px;
-      }
-
-      #chatWindow {
-        height: 350px;
-        padding: 16px;
-      }
-
-      .input-area {
-        padding: 16px;
-      }
-
-      .input-row {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .message-content {
-        max-width: 85%;
-      }
+      border: 1px solid rgba(102, 126, 234, 0.15);
     }
 
     .welcome-message {
       text-align: center;
-      padding: 40px 20px;
-      color: #666;
+      padding: 48px 24px;
+      color: #6b7280;
     }
 
     .welcome-message .icon {
-      font-size: 48px;
+      font-size: 56px;
       color: #667eea;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     .welcome-message h3 {
-      font-size: 20px;
-      color: #333;
-      margin-bottom: 12px;
+      font-size: 24px;
+      color: #1f2937;
+      margin-bottom: 16px;
       font-weight: 600;
     }
 
     .welcome-message p {
-      font-size: 14px;
-      line-height: 1.6;
-      max-width: 500px;
+      font-size: 16px;
+      line-height: 1.7;
+      max-width: 520px;
       margin: 0 auto;
     }
 
-    /* Typing effect for bot messages */
     .typing-effect {
-      overflow: hidden;
-      border-right: 2px solid transparent;
-      animation: typing-cursor 1s infinite;
+      animation: typing-cursor 1.2s infinite;
     }
 
     @keyframes typing-cursor {
-      0%, 50% { border-right-color: transparent; }
-      51%, 100% { border-right-color: #667eea; }
+      0%, 50% { border-right: 2px solid transparent; }
+      51%, 100% { border-right: 2px solid #667eea; }
+    }
+
+    .follow-up-suggestions {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .follow-up-btn {
+      padding: 6px 12px;
+      background: rgba(102, 126, 234, 0.06);
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      border-radius: 16px;
+      font-size: 13px;
+      color: #667eea;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .follow-up-btn:hover {
+      background: rgba(102, 126, 234, 0.12);
+      border-color: rgba(102, 126, 234, 0.3);
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .chat-container { border-radius: 18px; }
+      .header { padding: 24px; }
+      .header h1 { font-size: 26px; }
+      #chatWindow { height: 380px; padding: 20px; }
+      .input-area { padding: 20px; }
+      .input-row { flex-direction: column; align-items: stretch; }
+      .message-content { max-width: 88%; }
+    }
+
+    .connection-status {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      display: none;
+    }
+
+    .connection-status.connecting {
+      background: #fbbf24;
+      color: #92400e;
+      display: block;
+    }
+
+    .connection-status.error {
+      background: #f87171;
+      color: #991b1b;
+      display: block;
     }
   </style>
 </head>
 <body>
+  <div class="connection-status" id="connectionStatus"></div>
+  
   <div class="chat-container">
     <div class="header">
-      <div class="header-content">
-        <h1>
-          <div class="logo-icon">
-            <i class="fas fa-graduation-cap"></i>
-          </div>
-          EduBot
-        </h1>
-        <div class="subtitle">Your Academic AI Tutor</div>
-      </div>
+      <h1>
+        <div class="logo-icon">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        EduBot
+      </h1>
+      <div class="subtitle">Professional AI Academic Tutor</div>
     </div>
     
     <div class="notice">
       <i class="fas fa-university"></i>
-      Supporting All School Standards & College Degrees - Ask me anything academic!
+      Advanced AI tutor for all academic subjects - Ask questions and get detailed follow-up assistance
     </div>
     
     <div id="chatWindow">
       <div class="welcome-message">
         <div class="icon">🎓</div>
         <h3>Welcome to EduBot!</h3>
-        <p>I'm your academic AI tutor here to help you with any educational questions. Whether it's homework, exam prep, or just curiosity about a topic - I'm here to give clear, direct answers!</p>
-        <br>
-        <p>Ask me anything academic!</p>
+        <p>I'm your professional AI academic tutor with advanced capabilities. I provide comprehensive answers and can handle follow-up questions to deepen your understanding. Ask me anything about any academic subject!</p>
       </div>
     </div>
 
     <div class="input-area">
       <div class="input-row">
-        <div class="level-selector">
-          <select id="levelSelect">
-            <option value="school">School Student</option>
-            <option value="college">College Student</option>
-          </select>
-        </div>
+        <select id="levelSelect">
+          <option value="school">School Student</option>
+          <option value="college">College Student</option>
+          <option value="research">Research Level</option>
+        </select>
         
         <div class="input-container">
-          <input id="questionInput" type="text" placeholder="Ask me anything academic..." autocomplete="off" />
+          <input id="questionInput" type="text" placeholder="Ask your academic question..." autocomplete="off" />
           <button id="sendBtn" disabled>
             <i class="fas fa-paper-plane"></i>
           </button>
@@ -616,355 +606,587 @@ def index():
       </div>
       
       <div class="features">
-        <span class="feature-tag">Math & Science</span>
-        <span class="feature-tag">Languages</span>
-        <span class="feature-tag">History</span>
-        <span class="feature-tag">Computer Science</span>
-        <span class="feature-tag">All Subjects</span>
+        <span class="feature-tag">Mathematics & Statistics</span>
+        <span class="feature-tag">Sciences & Engineering</span>
+        <span class="feature-tag">Languages & Literature</span>
+        <span class="feature-tag">History & Social Studies</span>
+        <span class="feature-tag">Computer Science & AI</span>
+        <span class="feature-tag">Follow-up Questions</span>
       </div>
     </div>
   </div>
 
   <script>
-    const chatWindow = document.getElementById('chatWindow');
-    const input = document.getElementById('questionInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const levelSelect = document.getElementById('levelSelect');
-
-    let currentChatId = null;
-
-    // Fix send button enabling/disabling
-    function updateSendButton() {
-      const hasText = input.value.trim().length > 0;
-      sendBtn.disabled = !hasText;
-    }
-
-    input.addEventListener('input', updateSendButton);
-    input.addEventListener('keyup', updateSendButton);
-    input.addEventListener('paste', () => {
-      setTimeout(updateSendButton, 10);
-    });
-
-    function stripMarkdown(text) {
-      return text
-        .replace(/\*\*(.+?)\*\*/g, '$1')
-        .replace(/__(.+?)__/g, '$1')
-        .replace(/\*(.+?)\*/g, '$1')
-        .replace(/_(.+?)_/g, '$1')
-        .replace(/~~(.+?)~~/g, '$1')
-        .replace(/`(.+?)`/g, '$1')
-        .replace(/^#{1,6}\s+(.+)$/gm, '$1')
-        .replace(/\[(.+?)\]\(.+?\)/g, '$1')
-        .replace(/[*_]/g, '');
-    }
-
-    function clearWelcome() {
-      const welcome = chatWindow.querySelector('.welcome-message');
-      if (welcome) {
-        welcome.remove();
+    // Production-level JavaScript with enhanced features
+    class EduBotChat {
+      constructor() {
+        this.chatWindow = document.getElementById('chatWindow');
+        this.input = document.getElementById('questionInput');
+        this.sendBtn = document.getElementById('sendBtn');
+        this.levelSelect = document.getElementById('levelSelect');
+        this.connectionStatus = document.getElementById('connectionStatus');
+        
+        this.currentChatId = null;
+        this.isTyping = false;
+        this.retryAttempts = 0;
+        this.maxRetries = 3;
+        
+        this.init();
       }
-    }
 
-    // Enhanced typing effect that handles line breaks properly
-    function typeMessage(element, text, speed = 25) {
-      element.innerHTML = '';
-      element.classList.add('typing-effect');
-      
-      // Convert <br> to actual line breaks for processing
-      const processedText = text.replace(/<br\s*\/?>/gi, '\n');
-      const lines = processedText.split('\n');
-      
-      let currentLineIndex = 0;
-      let currentCharIndex = 0;
-      let displayHTML = '';
-      
-      function typeChar() {
-        if (currentLineIndex < lines.length) {
-          const currentLine = lines[currentLineIndex];
-          
-          if (currentCharIndex < currentLine.length) {
-            // Add character to current line
-            currentCharIndex++;
-            
-            // Rebuild display HTML with current progress
-            displayHTML = '';
-            for (let i = 0; i <= currentLineIndex; i++) {
-              if (i < currentLineIndex) {
-                // Complete previous lines
-                displayHTML += lines[i];
-                if (i < lines.length - 1 && lines[i+1] !== '') displayHTML += '<br>';
-              } else {
-                // Current line being typed
-                displayHTML += lines[i].substring(0, currentCharIndex);
-              }
+      init() {
+        this.setupEventListeners();
+        this.updateSendButton();
+        this.input.focus();
+        
+        // Cleanup old chats periodically
+        setInterval(() => this.cleanupOldMessages(), 300000); // 5 minutes
+      }
+
+      setupEventListeners() {
+        this.input.addEventListener('input', () => this.updateSendButton());
+        this.input.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        this.sendBtn.addEventListener('click', () => this.sendMessage());
+        
+        // Handle visibility change to pause/resume
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) {
+            this.updateConnectionStatus();
+          }
+        });
+      }
+
+      updateSendButton() {
+        const hasText = this.input.value.trim().length > 0;
+        this.sendBtn.disabled = !hasText || this.isTyping;
+      }
+
+      handleKeyDown(e) {
+        if (e.key === 'Enter' && !this.sendBtn.disabled) {
+          e.preventDefault();
+          this.sendMessage();
+        }
+      }
+
+      updateConnectionStatus(status = 'connected', message = '') {
+        this.connectionStatus.className = `connection-status ${status}`;
+        this.connectionStatus.textContent = message;
+        
+        if (status === 'connected') {
+          setTimeout(() => {
+            this.connectionStatus.style.display = 'none';
+          }, 2000);
+        }
+      }
+
+      clearWelcome() {
+        const welcome = this.chatWindow.querySelector('.welcome-message');
+        if (welcome) {
+          welcome.remove();
+        }
+      }
+
+      addMessage(text, isUser, followUpSuggestions = []) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.textContent = isUser ? 'U' : 'AI';
+        
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        
+        if (isUser) {
+          content.textContent = text;
+        } else {
+          this.typeMessage(content, text, () => {
+            if (followUpSuggestions.length > 0) {
+              this.addFollowUpSuggestions(messageDiv, followUpSuggestions);
             }
-            
-            element.innerHTML = displayHTML;
-            setTimeout(typeChar, speed);
-            
+          });
+        }
+        
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(content);
+        this.chatWindow.appendChild(messageDiv);
+        
+        this.scrollToBottom();
+      }
+
+      typeMessage(element, text, callback = null) {
+        element.innerHTML = '';
+        element.classList.add('typing-effect');
+        
+        const words = text.split(' ');
+        let currentWordIndex = 0;
+        
+        const typeWord = () => {
+          if (currentWordIndex < words.length) {
+            element.innerHTML += (currentWordIndex > 0 ? ' ' : '') + words[currentWordIndex];
+            currentWordIndex++;
+            setTimeout(typeWord, 50);
           } else {
-            // Move to next line
-            currentLineIndex++;
-            currentCharIndex = 0;
-            
-            if (currentLineIndex < lines.length) {
-              // Add line break and pause before next line
-              if (lines[currentLineIndex] !== '') {
-                displayHTML += '<br>';
-                element.innerHTML = displayHTML;
-              }
-              setTimeout(typeChar, speed * 3); // Longer pause between lines
-            } else {
-              // Finished typing all lines
-              element.classList.remove('typing-effect');
-            }
+            element.classList.remove('typing-effect');
+            if (callback) callback();
+          }
+        };
+        
+        typeWord();
+      }
+
+      addFollowUpSuggestions(messageDiv, suggestions) {
+        const suggestionsDiv = document.createElement('div');
+        suggestionsDiv.className = 'follow-up-suggestions';
+        
+        suggestions.forEach(suggestion => {
+          const btn = document.createElement('button');
+          btn.className = 'follow-up-btn';
+          btn.textContent = suggestion;
+          btn.addEventListener('click', () => {
+            this.input.value = suggestion;
+            this.updateSendButton();
+            this.sendMessage();
+          });
+          suggestionsDiv.appendChild(btn);
+        });
+        
+        messageDiv.appendChild(suggestionsDiv);
+      }
+
+      addTypingIndicator() {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message bot typing-message';
+        messageDiv.innerHTML = `
+          <div class="message-avatar">AI</div>
+          <div class="message-content">
+            <div class="typing-indicator">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          </div>
+        `;
+        this.chatWindow.appendChild(messageDiv);
+        this.scrollToBottom();
+      }
+
+      removeTypingIndicator() {
+        const typingMsg = this.chatWindow.querySelector('.typing-message');
+        if (typingMsg) {
+          typingMsg.remove();
+        }
+      }
+
+      scrollToBottom() {
+        this.chatWindow.scrollTop = this.chatWindow.scrollHeight;
+      }
+
+      cleanupOldMessages() {
+        const messages = this.chatWindow.querySelectorAll('.message');
+        if (messages.length > 50) {
+          // Keep only the latest 40 messages
+          for (let i = 0; i < messages.length - 40; i++) {
+            messages[i].remove();
           }
         }
       }
-      
-      typeChar();
-    }
 
-    async function sendMessage() {
-      const question = input.value.trim();
-      if (!question) return;
-      
-      clearWelcome();
-      addMessage(question, true);
-      input.value = '';
-      updateSendButton(); // Update button state after clearing input
+      async sendMessage() {
+        const question = this.input.value.trim();
+        if (!question || this.isTyping) return;
 
-      const level = levelSelect.value;
-      addTypingIndicator();
-
-      try {
-        const res = await fetch('/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            message: question,
-            level: level,
-            chat_id: currentChatId
-          })
-        });
+        this.isTyping = true;
+        this.clearWelcome();
+        this.addMessage(question, true);
         
-        const data = await res.json();
-        removeTypingIndicator();
+        this.input.value = '';
+        this.updateSendButton();
         
-        if (data.error) {
-          addMessage(`I'm sorry, but I encountered an error: ${data.error}`, false, true);
-        } else {
-          currentChatId = data.chat_id;
-          addMessage(data.reply.content || "I can only help with educational topics!", false, true);
+        const level = this.levelSelect.value;
+        this.addTypingIndicator();
+        this.updateConnectionStatus('connecting', 'Connecting...');
+
+        try {
+          const response = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: question,
+              level: level,
+              chat_id: this.currentChatId
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          this.removeTypingIndicator();
+          
+          if (data.error) {
+            this.addMessage(`I apologize, but I encountered an error: ${data.error}`, false);
+          } else {
+            this.currentChatId = data.chat_id;
+            const followUpSuggestions = data.follow_up_suggestions || [];
+            this.addMessage(data.reply.content, false, followUpSuggestions);
+          }
+          
+          this.updateConnectionStatus('connected');
+          this.retryAttempts = 0;
+          
+        } catch (error) {
+          this.removeTypingIndicator();
+          
+          if (this.retryAttempts < this.maxRetries) {
+            this.retryAttempts++;
+            this.updateConnectionStatus('connecting', `Retrying... (${this.retryAttempts}/${this.maxRetries})`);
+            setTimeout(() => this.sendMessage(), 2000);
+            return;
+          }
+          
+          this.addMessage('I apologize, but I\'m having connection issues. Please try again in a moment.', false);
+          this.updateConnectionStatus('error', 'Connection failed');
+          this.retryAttempts = 0;
+        } finally {
+          this.isTyping = false;
+          this.updateSendButton();
         }
-      } catch (error) {
-        removeTypingIndicator();
-        addMessage('Sorry, I\'m having trouble connecting right now. Please try again!', false, true);
       }
     }
 
-    function addMessage(text, isUser, useTyping = false) {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-      
-      const avatar = document.createElement('div');
-      avatar.className = 'message-avatar';
-      avatar.textContent = isUser ? 'U' : 'AI';
-      
-      const content = document.createElement('div');
-      content.className = 'message-content';
-      
-      if (!isUser) {
-        const cleanText = stripMarkdown(text);
-        // Remove <br><br> and replace with single <br> for better formatting
-        const formattedText = cleanText.replace(/<br\s*\/?>\s*<br\s*\/?>/gi, '<br>');
-        
-        if (useTyping) {
-          content.innerHTML = '';
-          typeMessage(content, formattedText, 20); // Slightly faster for better UX
-        } else {
-          content.innerHTML = formattedText;
-        }
-      } else {
-        content.textContent = text;
-      }
-      
-      messageDiv.appendChild(avatar);
-      messageDiv.appendChild(content);
-      chatWindow.appendChild(messageDiv);
-      
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
-
-    function addTypingIndicator() {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = 'message bot typing-message';
-      messageDiv.innerHTML = `
-        <div class="message-avatar">AI</div>
-        <div class="message-content">
-          <div class="typing-indicator">
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-          </div>
-        </div>
-      `;
-      chatWindow.appendChild(messageDiv);
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
-
-    function removeTypingIndicator() {
-      const typingMsg = chatWindow.querySelector('.typing-message');
-      if (typingMsg) {
-        typingMsg.remove();
-      }
-    }
-
-    sendBtn.addEventListener('click', sendMessage);
-    
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !sendBtn.disabled) {
-        e.preventDefault();
-        sendMessage();
-      }
+    // Initialize the chat application
+    document.addEventListener('DOMContentLoaded', () => {
+      new EduBotChat();
     });
-
-    // Auto-focus input and set initial button state
-    input.focus();
-    updateSendButton();
   </script>
 </body>
 </html>
     '''
 
-# Chat endpoint with DIRECT, CONCISE responses
+# Production-level chat endpoint with follow-up question handling
 @app.route("/chat", methods=["POST"])
 def chat() -> tuple:
-    data = request.get_json(silent=True) or {}
-    user_message: str | None = data.get("message")
-    level: str = data.get("level", "school").lower()
-    chat_id: str = data.get("chat_id") or new_id()
-
-    if not user_message:
-        return jsonify({"error": "Please ask me something!"}), 400
-
-    # Handle simple greetings with friendly responses (NO EMOJIS)
-    greetings = ['hi', 'hello', 'hey', 'hii', 'greetings', 'good morning', 'good afternoon', 'good evening', 'namaste']
-    if user_message.lower().strip() in greetings:
-        friendly_responses = [
-            "Hello! I'm EduBot, your academic AI tutor. What would you like to learn about?",
-            "Hi there! Ready to help with any academic questions you have.",
-            "Hello! Ask me about any subject and I'll give you a clear answer.",
-            "Hey! What academic topic can I help you with today?",
-        ]
-        import random
-        return jsonify({
-            "chat_id": chat_id,
-            "reply": {
-                "message_id": new_id(),
-                "content": random.choice(friendly_responses)
-            }
-        }), 200
-
-    # Check if the message is educational content
-    if not is_educational_content(user_message):
-        return jsonify({
-            "chat_id": chat_id,
-            "reply": {
-                "message_id": new_id(),
-                "content": "I'm designed to help with academic subjects only. Ask me about any school or college topic!"
-            }
-        }), 200
-
-    chat_histories.setdefault(chat_id, []).append(
-        {"role": "user", "content": user_message, "message_id": new_id()}
-    )
-
-    # UPDATED System prompts for DIRECT, CONCISE answers
-    if level == "school":
-        system_prompt = """You are EduBot, an academic AI tutor for school students. Follow these rules:
-
-RESPONSE STYLE:
-- Give DIRECT, CONCISE answers
-- For simple factual questions (like "which is the smallest bone"), answer ONLY that specific question
-- No emojis whatsoever
-- Keep responses short and to the point
-- Only elaborate if the question specifically asks for explanation
-
-ANSWER LENGTH:
-- For factual questions: 1-2 sentences maximum
-- For complex topics: 2-3 sentences maximum
-- Only provide what was specifically asked
-
-EXAMPLES:
-- Question: "Which is the smallest bone in human body?"
-- Answer: "The stapes bone in the middle ear is the smallest bone in the human body."
-
-- Question: "What is photosynthesis?"
-- Answer: "Photosynthesis is the process by which plants use sunlight, water, and carbon dioxide to produce glucose and oxygen."
-
-Remember: Be direct and concise. Answer only what's asked."""
-
-    else:  # college level
-        system_prompt = """You are EduBot, an academic AI tutor for college students. Follow these rules:
-
-RESPONSE STYLE:
-- Give DIRECT, PRECISE answers
-- For simple factual questions, provide concise factual answers
-- No emojis whatsoever
-- Be accurate and specific
-- Only elaborate if the question asks for detailed explanation
-
-ANSWER LENGTH:
-- For factual questions: 1-2 sentences maximum
-- For complex topics: 2-4 sentences maximum
-- Include technical terms when appropriate but keep it concise
-
-EXAMPLES:
-- Question: "Which is the smallest bone in human body?"
-- Answer: "The stapes (stirrup bone) in the middle ear is the smallest bone in the human body, measuring approximately 2-3mm in length."
-
-- Question: "What is artificial intelligence?"
-- Answer: "Artificial Intelligence is the simulation of human intelligence in machines that are programmed to think, learn, and make decisions like humans."
-
-Remember: Be precise and direct. Answer exactly what's asked without unnecessary elaboration."""
-
-    messages = [{"role": "system", "content": system_prompt}] + [
-        {"role": m["role"], "content": m["content"]} for m in chat_histories[chat_id]
-    ]
-
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            temperature=0.3,  # Lower temperature for more precise, direct answers
-            max_tokens=150,   # REDUCED for concise responses
-            presence_penalty=0.1,
-            frequency_penalty=0.1
-        )
-        bot_reply = response.choices[0].message.content.strip()
+        cleanup_old_chats()  # Clean up old chats periodically
+        
+        data = request.get_json(silent=True) or {}
+        user_message: str | None = data.get("message")
+        level: str = data.get("level", "school").lower()
+        chat_id: str = data.get("chat_id") or new_id()
 
-    except OpenAIError as e:
-        return jsonify({"error": "I'm having trouble right now. Please try asking again."}), 502
+        if not user_message:
+            return jsonify({"error": "Please provide a message"}), 400
 
-    assistant_msg = {"role": "assistant", "content": bot_reply, "message_id": new_id()}
-    chat_histories[chat_id].append(assistant_msg)
+        logger.info(f"Received message from chat {chat_id[:8]}: {user_message[:50]}...")
 
-    return jsonify({
-        "chat_id": chat_id,
-        "reply": {
-            "message_id": assistant_msg["message_id"],
-            "content": bot_reply,
-        },
-    }), 200
+        # Initialize chat history if new
+        if chat_id not in chat_histories:
+            chat_histories[chat_id] = {
+                'messages': [],
+                'created_at': datetime.now(),
+                'level': level
+            }
+
+        # Handle greetings
+        greetings = ['hi', 'hello', 'hey', 'hii', 'greetings', 'good morning', 
+                    'good afternoon', 'good evening', 'namaste']
+        if user_message.lower().strip() in greetings:
+            return jsonify({
+                "chat_id": chat_id,
+                "reply": {
+                    "message_id": new_id(),
+                    "content": "Hello! I'm EduBot, your professional AI academic tutor. I can help you with any academic subject and provide detailed explanations with follow-up questions. What would you like to learn about?"
+                },
+                "follow_up_suggestions": [
+                    "What subjects do you specialize in?",
+                    "How can you help with my studies?",
+                    "Can you explain complex topics?"
+                ]
+            }), 200
+
+        # Check educational content
+        if not is_educational_content(user_message):
+            return jsonify({
+                "chat_id": chat_id,
+                "reply": {
+                    "message_id": new_id(),
+                    "content": "I'm designed specifically for educational assistance. Please ask me about academic subjects like Mathematics, Science, Literature, History, Computer Science, or any other school or college topic."
+                },
+                "follow_up_suggestions": [
+                    "Help me with Math",
+                    "Explain a Science concept",
+                    "Literature analysis help"
+                ]
+            }), 200
+
+        # Add user message to history
+        chat_histories[chat_id]['messages'].append({
+            "role": "user", 
+            "content": user_message, 
+            "message_id": new_id(),
+            "timestamp": datetime.now()
+        })
+
+        # Enhanced system prompts based on level
+        if level == "school":
+            system_prompt = """You are EduBot, a professional AI academic tutor for school students. Follow these guidelines:
+
+CORE RESPONSIBILITIES:
+- Provide accurate, educational responses for school-level topics
+- Adapt explanations to appropriate grade level understanding
+- Encourage learning and curiosity
+- Be supportive and patient
+
+RESPONSE STYLE:
+- Clear, structured explanations
+- Use examples and analogies when helpful
+- Break complex topics into digestible parts
+- No emojis in responses
+- Professional but friendly tone
+
+ANSWER LENGTH:
+- For simple factual questions: 2-3 sentences with clear explanation
+- For complex topics: Comprehensive explanation with examples
+- Always ensure understanding before moving to advanced concepts
+
+FOLLOW-UP APPROACH:
+- Always consider what natural follow-up questions a student might have
+- Suggest 2-3 relevant follow-up questions when appropriate
+- Help students deepen their understanding progressively
+
+Remember: You're helping students learn effectively and build strong academic foundations."""
+
+        elif level == "college":
+            system_prompt = """You are EduBot, a professional AI academic tutor for college students. Follow these guidelines:
+
+CORE RESPONSIBILITIES:
+- Provide detailed, academic-level responses
+- Include technical terminology when appropriate
+- Reference established theories and principles
+- Support critical thinking and analysis
+
+RESPONSE STYLE:
+- Comprehensive and well-structured
+- Include relevant technical details
+- Make connections between concepts
+- Professional academic tone without emojis
+- Encourage deeper investigation
+
+ANSWER LENGTH:
+- For factual questions: Precise answer with context and implications
+- For complex topics: Thorough analysis with multiple perspectives
+- Include relevant examples and applications
+
+FOLLOW-UP APPROACH:
+- Suggest advanced follow-up questions
+- Encourage analytical thinking
+- Connect to broader academic concepts
+- Support research and deeper study
+
+Remember: You're supporting advanced learning and academic excellence."""
+
+        else:  # research level
+            system_prompt = """You are EduBot, a professional AI academic tutor for research-level inquiries. Follow these guidelines:
+
+CORE RESPONSIBILITIES:
+- Provide expert-level responses with academic rigor
+- Reference current research and methodologies
+- Support advanced analysis and critical evaluation
+- Maintain highest standards of accuracy
+
+RESPONSE STYLE:
+- Sophisticated and comprehensive
+- Include methodological considerations
+- Reference relevant literature concepts
+- Professional academic discourse
+- No emojis - maintain formal academic tone
+
+ANSWER LENGTH:
+- Detailed responses appropriate for research context
+- Include multiple perspectives and approaches
+- Discuss implications and applications
+- Address limitations and considerations
+
+FOLLOW-UP APPROACH:
+- Suggest research-oriented follow-up questions
+- Encourage methodological thinking
+- Connect to current academic discussions
+- Support independent research development
+
+Remember: You're facilitating advanced academic research and scholarly development."""
+
+        # Build conversation context (keep last 10 exchanges for context)
+        recent_messages = chat_histories[chat_id]['messages'][-20:]  # Last 10 exchanges
+        messages = [{"role": "system", "content": system_prompt}] + [
+            {"role": m["role"], "content": m["content"]} 
+            for m in recent_messages
+        ]
+
+        # Generate response with appropriate parameters
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                temperature=0.4,  # Balanced creativity and accuracy
+                max_tokens=400,   # Comprehensive responses
+                presence_penalty=0.1,
+                frequency_penalty=0.1
+            )
+            bot_reply = response.choices[0].message.content.strip()
+
+            # Generate follow-up suggestions
+            follow_up_suggestions = generate_follow_up_suggestions(user_message, bot_reply, level)
+
+        except OpenAIError as e:
+            logger.error(f"OpenAI API error: {str(e)}")
+            return jsonify({
+                "error": "I'm experiencing technical difficulties. Please try again in a moment."
+            }), 502
+
+        # Add assistant response to history
+        assistant_msg = {
+            "role": "assistant", 
+            "content": bot_reply, 
+            "message_id": new_id(),
+            "timestamp": datetime.now()
+        }
+        chat_histories[chat_id]['messages'].append(assistant_msg)
+
+        logger.info(f"Generated response for chat {chat_id[:8]}: {len(bot_reply)} characters")
+
+        return jsonify({
+            "chat_id": chat_id,
+            "reply": {
+                "message_id": assistant_msg["message_id"],
+                "content": bot_reply,
+            },
+            "follow_up_suggestions": follow_up_suggestions
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Unexpected error in chat endpoint: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred. Please try again."}), 500
+
+def generate_follow_up_suggestions(user_question: str, bot_response: str, level: str) -> List[str]:
+    """Generate contextual follow-up questions based on the conversation"""
+    
+    # Define follow-up patterns based on question types
+    question_lower = user_question.lower()
+    
+    # Science topics
+    if any(word in question_lower for word in ['physics', 'chemistry', 'biology', 'science']):
+        if level == "school":
+            return [
+                "Can you give me a real-world example?",
+                "How is this used in daily life?",
+                "What are the key points to remember?"
+            ]
+        else:
+            return [
+                "What are the underlying mechanisms?",
+                "How does this relate to other concepts?",
+                "What are current research developments?"
+            ]
+    
+    # Mathematics
+    elif any(word in question_lower for word in ['math', 'algebra', 'geometry', 'calculus']):
+        if level == "school":
+            return [
+                "Can you show me a step-by-step example?",
+                "What are common mistakes to avoid?",
+                "How do I practice this concept?"
+            ]
+        else:
+            return [
+                "What are the practical applications?",
+                "How does this connect to advanced topics?",
+                "What are the theoretical implications?"
+            ]
+    
+    # History topics
+    elif any(word in question_lower for word in ['history', 'historical', 'war', 'ancient']):
+        return [
+            "What were the causes and effects?",
+            "How did this impact society?",
+            "What lessons can we learn from this?"
+        ]
+    
+    # Computer Science / Technology
+    elif any(word in question_lower for word in ['computer', 'programming', 'algorithm', 'ai', 'technology']):
+        if level == "school":
+            return [
+                "How do I get started with this?",
+                "What tools do I need?",
+                "Can you show me a simple example?"
+            ]
+        else:
+            return [
+                "What are the implementation challenges?",
+                "How does this scale in practice?",
+                "What are alternative approaches?"
+            ]
+    
+    # Literature
+    elif any(word in question_lower for word in ['literature', 'poem', 'novel', 'author', 'writing']):
+        return [
+            "What are the main themes?",
+            "How does this reflect the time period?",
+            "What techniques does the author use?"
+        ]
+    
+    # General follow-ups based on question type
+    elif question_lower.startswith(('what is', 'what are')):
+        return [
+            "How does this work in practice?",
+            "Why is this important?",
+            "Can you give me more examples?"
+        ]
+    elif question_lower.startswith(('how to', 'how do')):
+        return [
+            "What if I encounter problems?",
+            "Are there alternative methods?",
+            "What are the next steps?"
+        ]
+    elif question_lower.startswith(('why is', 'why does')):
+        return [
+            "What are the implications?",
+            "How does this affect other areas?",
+            "What would happen if this changed?"
+        ]
+    
+    # Default follow-ups
+    return [
+        "Can you explain this further?",
+        "How does this apply to my studies?",
+        "What should I learn next?"
+    ]
 
 # Health check endpoint
 @app.route("/health")
 def health():
-    return jsonify({"status": "healthy", "service": "EduBot - Academic AI Tutor"}), 200
+    return jsonify({
+        "status": "healthy",
+        "service": "EduBot - Professional AI Academic Tutor",
+        "version": "2.0",
+        "timestamp": datetime.now().isoformat(),
+        "active_chats": len(chat_histories)
+    }), 200
+
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": "Endpoint not found"}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f"Internal server error: {str(error)}")
+    return jsonify({"error": "Internal server error"}), 500
 
 # Get port from environment variable
 port = int(os.environ.get("PORT", 5000))
 
 if __name__ == "__main__":
+    logger.info(f"Starting EduBot server on port {port}")
     app.run(host="0.0.0.0", port=port, debug=False)
