@@ -28,38 +28,134 @@ def new_id() -> str:
     return str(uuid.uuid4())
 
 def is_educational_content(message: str) -> bool:
-    """Check if the message is educational/academic content"""
-    non_educational_keywords = [
-        'joke', 'funny', 'entertainment', 'movie', 'game', 'sport', 'gossip',
-        'celebrity', 'dating', 'relationship', 'personal', 'private', 'hack',
-        'illegal', 'violence', 'weapon', 'drug', 'adult', 'inappropriate',
-        'password', 'credit card', 'money', 'investment', 'trading', 'crypto',
-        'political', 'religion', 'controversial', 'offensive'
+    """Check if the message is educational/academic content for school or college"""
+    
+    # Strictly non-educational content that should be blocked
+    blocked_keywords = [
+        'porn', 'sex', 'nude', 'explicit', 'adult content', 
+        'violence', 'kill', 'murder', 'weapon', 'bomb', 'terrorist',
+        'drug dealer', 'illegal drugs', 'cocaine', 'heroin',
+        'hack bank', 'steal money', 'credit card fraud',
+        'suicide', 'self harm', 'racist', 'hate speech'
     ]
     
-    educational_keywords = [
-        'learn', 'study', 'explain', 'teach', 'understand', 'concept', 'theory',
-        'formula', 'equation', 'definition', 'example', 'homework', 'assignment',
-        'exam', 'test', 'quiz', 'subject', 'topic', 'lesson', 'tutorial',
-        'mathematics', 'science', 'history', 'geography', 'literature', 'language',
-        'physics', 'chemistry', 'biology', 'computer', 'programming', 'technology',
-        'engineering', 'medicine', 'law', 'economics', 'psychology', 'philosophy',
-        'art', 'music', 'education', 'academic', 'research', 'analysis'
+    # Educational topics for ALL school standards and college branches
+    educational_topics = [
+        # Core School Subjects (All Standards 1-12)
+        'mathematics', 'math', 'algebra', 'geometry', 'calculus', 'trigonometry', 'statistics',
+        'physics', 'chemistry', 'biology', 'science', 'botany', 'zoology',
+        'history', 'geography', 'civics', 'political science', 'social studies',
+        'english', 'literature', 'grammar', 'writing', 'reading', 'poetry',
+        'hindi', 'sanskrit', 'language', 'linguistics',
+        'economics', 'commerce', 'accounting', 'business studies',
+        'philosophy', 'psychology', 'sociology', 'anthropology',
+        'art', 'music', 'dance', 'drama', 'theater', 'fine arts',
+        'physical education', 'sports', 'health', 'nutrition',
+        
+        # College Degree Branches - Engineering
+        'engineering', 'mechanical engineering', 'civil engineering', 'electrical engineering',
+        'computer science', 'information technology', 'software engineering',
+        'electronics', 'chemical engineering', 'aerospace engineering',
+        'automobile engineering', 'biotechnology engineering',
+        
+        # College Degree Branches - Medical
+        'medicine', 'mbbs', 'anatomy', 'physiology', 'pharmacology',
+        'pathology', 'microbiology', 'biochemistry', 'surgery',
+        'dentistry', 'nursing', 'pharmacy', 'physiotherapy',
+        'veterinary', 'medical science', 'neurology', 'cardiology',
+        
+        # College Degree Branches - Science
+        'bsc', 'msc', 'mathematics', 'physics', 'chemistry', 'biology',
+        'environmental science', 'geology', 'astronomy', 'astrophysics',
+        'marine biology', 'genetics', 'molecular biology',
+        
+        # College Degree Branches - Arts & Humanities
+        'ba', 'ma', 'english literature', 'history', 'political science',
+        'philosophy', 'psychology', 'sociology', 'anthropology',
+        'journalism', 'mass communication', 'linguistics',
+        'archaeology', 'museum studies', 'library science',
+        
+        # College Degree Branches - Commerce & Management
+        'bcom', 'mcom', 'bba', 'mba', 'accounting', 'finance',
+        'marketing', 'human resources', 'operations management',
+        'business administration', 'chartered accountancy',
+        'cost accounting', 'taxation', 'banking', 'insurance',
+        
+        # College Degree Branches - Law
+        'law', 'llb', 'llm', 'constitutional law', 'criminal law',
+        'civil law', 'corporate law', 'international law',
+        'human rights', 'intellectual property',
+        
+        # College Degree Branches - Education
+        'bed', 'med', 'education', 'pedagogy', 'child psychology',
+        'educational psychology', 'curriculum development',
+        
+        # College Degree Branches - Technology & Computer Science
+        'computer science', 'information technology', 'software engineering',
+        'artificial intelligence', 'ai', 'machine learning', 'data science',
+        'cybersecurity', 'network security', 'database management',
+        'web development', 'mobile app development', 'programming',
+        'python', 'java', 'c++', 'javascript', 'html', 'css',
+        'algorithms', 'data structures', 'operating systems',
+        'computer networks', 'cloud computing', 'blockchain',
+        
+        # College Degree Branches - Architecture & Design
+        'architecture', 'interior design', 'graphic design',
+        'fashion design', 'product design', 'urban planning',
+        
+        # College Degree Branches - Agriculture
+        'agriculture', 'agricultural engineering', 'horticulture',
+        'forestry', 'animal husbandry', 'dairy science',
+        'food technology', 'agricultural economics',
+        
+        # College Degree Branches - Others
+        'hotel management', 'tourism', 'aviation', 'maritime studies',
+        'film studies', 'animation', 'photography',
+        'social work', 'public administration',
+        
+        # General Academic Terms
+        'study', 'learn', 'education', 'academic', 'school', 'college',
+        'university', 'degree', 'diploma', 'course', 'subject',
+        'exam', 'test', 'assignment', 'homework', 'project',
+        'research', 'thesis', 'dissertation', 'analysis',
+        'theory', 'concept', 'principle', 'formula', 'equation',
+        'definition', 'explanation', 'example', 'solution',
+        'problem solving', 'critical thinking', 'reasoning'
     ]
     
-    message_lower = message.lower()
+    # Simple greetings and conversational starters
+    greetings = ['hi', 'hello', 'hey', 'hii', 'hello there', 'good morning', 
+                'good afternoon', 'good evening', 'namaste', 'greetings']
     
-    # Check for non-educational content
-    for keyword in non_educational_keywords:
-        if keyword in message_lower:
+    message_lower = message.lower().strip()
+    
+    # Block only strictly inappropriate content
+    for blocked in blocked_keywords:
+        if blocked in message_lower:
             return False
     
-    # Check for educational content
-    for keyword in educational_keywords:
-        if keyword in message_lower:
+    # Allow greetings
+    if any(greeting in message_lower for greeting in greetings):
+        return True
+    
+    # Allow educational content
+    for topic in educational_topics:
+        if topic in message_lower:
             return True
     
-    # If no clear indicators, assume educational (to be safe)
+    # For ambiguous content, check if it seems academic
+    academic_indicators = ['what is', 'explain', 'how to', 'define', 'solve', 'calculate', 
+                          'difference between', 'types of', 'examples of', 'formula for',
+                          'meaning of', 'understand', 'learn about', 'tell me about']
+    
+    if any(indicator in message_lower for indicator in academic_indicators):
+        return True
+    
+    # Be permissive for short questions that might be educational
+    if len(message.split()) <= 5:
+        return True
+    
+    # Default to allowing content (educational focus)
     return True
 
 # Main route - serves the complete HTML page with attractive UI
@@ -71,7 +167,7 @@ def index():
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EduBot - AI Education Tutor</title>
+  <title>EduBot - Academic Tutor for Schools & Colleges</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -505,7 +601,7 @@ def index():
     .welcome-message p {
       font-size: 14px;
       line-height: 1.6;
-      max-width: 400px;
+      max-width: 500px;
       margin: 0 auto;
     }
   </style>
@@ -520,20 +616,22 @@ def index():
           </div>
           EduBot
         </h1>
-        <div class="subtitle">Your Personal AI Education Tutor</div>
+        <div class="subtitle">Academic Tutor for All School & College Students</div>
       </div>
     </div>
     
     <div class="notice">
-      <i class="fas fa-info-circle"></i>
-      Specialized in Mathematics, Science, History, Literature, and all academic subjects
+      <i class="fas fa-university"></i>
+      Supporting All School Standards (1-12) & College Degrees (Engineering, Medical, Arts, Commerce, Law, etc.)
     </div>
     
     <div id="chatWindow">
       <div class="welcome-message">
         <div class="icon">🎓</div>
-        <h3>Welcome to EduBot!</h3>
-        <p>I'm here to help you learn and understand academic concepts. Ask me questions about any educational topic, and I'll provide clear, detailed explanations tailored to your level.</p>
+        <h3>Welcome to EduBot - Your Academic Companion!</h3>
+        <p>I'm designed to help students from all school standards (Class 1-12) and college degree programs. Whether you're studying Mathematics, Science, Engineering, Medicine, Arts, Commerce, Law, or any other academic field - I'm here to provide clear explanations and help you understand concepts better.</p>
+        <br>
+        <p><strong>Ask me about:</strong> Your homework, assignments, exam preparation, concept explanations, problem solving, or any academic topic from your curriculum!</p>
       </div>
     </div>
 
@@ -541,13 +639,13 @@ def index():
       <div class="input-row">
         <div class="level-selector">
           <select id="levelSelect">
-            <option value="beginner">📚 Beginner</option>
-            <option value="advanced">🎯 Advanced</option>
+            <option value="school">🏫 School Student</option>
+            <option value="college">🎓 College Student</option>
           </select>
         </div>
         
         <div class="input-container">
-          <input id="questionInput" type="text" placeholder="Ask me about any academic topic..." autocomplete="off" />
+          <input id="questionInput" type="text" placeholder="Ask about any subject from your curriculum..." autocomplete="off" />
           <button id="sendBtn" disabled>
             <i class="fas fa-paper-plane"></i>
           </button>
@@ -555,12 +653,14 @@ def index():
       </div>
       
       <div class="features">
-        <span class="feature-tag">Mathematics</span>
-        <span class="feature-tag">Sciences</span>
-        <span class="feature-tag">History</span>
-        <span class="feature-tag">Literature</span>
-        <span class="feature-tag">Languages</span>
+        <span class="feature-tag">All School Subjects</span>
+        <span class="feature-tag">Engineering</span>
+        <span class="feature-tag">Medical</span>
+        <span class="feature-tag">Arts & Humanities</span>
+        <span class="feature-tag">Commerce</span>
+        <span class="feature-tag">Law</span>
         <span class="feature-tag">Computer Science</span>
+        <span class="feature-tag">Research Help</span>
       </div>
     </div>
   </div>
@@ -700,16 +800,27 @@ def index():
 </html>
     '''
 
-# Chat endpoint with educational content filtering
+# Chat endpoint with proper educational content handling
 @app.route("/chat", methods=["POST"])
 def chat() -> tuple:
     data = request.get_json(silent=True) or {}
     user_message: str | None = data.get("message")
-    level: str = data.get("level", "beginner").lower()
+    level: str = data.get("level", "school").lower()
     chat_id: str = data.get("chat_id") or new_id()
 
     if not user_message:
         return jsonify({"error": "Please provide a message"}), 400
+
+    # Handle simple greetings
+    greetings = ['hi', 'hello', 'hey', 'hii', 'greetings', 'good morning', 'good afternoon', 'good evening', 'namaste']
+    if user_message.lower().strip() in greetings:
+        return jsonify({
+            "chat_id": chat_id,
+            "reply": {
+                "message_id": new_id(),
+                "content": "Hello! I'm EduBot, your academic tutor for all school and college subjects. I can help you with questions from any standard (Class 1-12) or college degree program including Engineering, Medical, Arts, Commerce, Law, Computer Science, and more. What would you like to learn about today?"
+            }
+        }), 200
 
     # Check if the message is educational content
     if not is_educational_content(user_message):
@@ -717,7 +828,7 @@ def chat() -> tuple:
             "chat_id": chat_id,
             "reply": {
                 "message_id": new_id(),
-                "content": "I'm sorry, but I can only help with educational and academic topics. Please ask me questions related to subjects like Mathematics, Science, History, Literature, Languages, Computer Science, or other academic fields."
+                "content": "I'm designed to help with academic and educational topics for school and college students. Please ask me questions related to your curriculum, homework, assignments, or any subject you're studying. I'm here to help you learn!"
             }
         }), 200
 
@@ -725,73 +836,58 @@ def chat() -> tuple:
         {"role": "user", "content": user_message, "message_id": new_id()}
     )
 
-    # Enhanced system prompts with strict educational focus
-    if level == "beginner":
-        system_prompt = """You are EduBot, an AI Education Tutor designed exclusively for educational purposes. You MUST follow these rules:
+    # Enhanced system prompts for school and college students
+    if level == "school":
+        system_prompt = """You are EduBot, an AI academic tutor designed to help school students from Class 1 to Class 12. You MUST follow these rules:
 
-STRICT CONTENT RULES:
-- ONLY answer questions related to academic subjects: Mathematics, Science, History, Geography, Literature, Languages, Computer Science, Arts, Music, Philosophy, Psychology, Economics, Medicine, Engineering, Law, and other educational topics
-- REFUSE to answer questions about: entertainment, jokes, personal advice, relationships, politics, religion, controversial topics, illegal activities, violence, adult content, or non-educational topics
-- If asked non-educational questions, politely redirect to educational content
+ACADEMIC FOCUS:
+- Help with ALL school subjects: Mathematics, Science (Physics, Chemistry, Biology), Social Studies (History, Geography, Civics), Languages (English, Hindi, Regional), Computer Science, Arts, Physical Education
+- Support ALL educational boards: CBSE, ICSE, State Boards, International Boards
+- Assist with homework, assignments, exam preparation, concept understanding
+- Provide age-appropriate explanations based on the student's class level
 
-EDUCATIONAL APPROACH - BEGINNER LEVEL:
-- Explain concepts in very simple, beginner-friendly terms
-- Use everyday examples and analogies
-- Break down complex topics into small, digestible parts
-- Encourage questions and curiosity
+TEACHING APPROACH:
+- Use simple, clear language appropriate for school students
 - Provide step-by-step explanations
+- Use examples and analogies that students can relate to
+- Encourage learning and curiosity
+- Break down complex topics into smaller parts
+- Offer practice problems when relevant
 
-FORMATTING RULES:
-- Do NOT use markdown formatting (**bold**, *italic*, etc.)
-- Use plain text only
-- Start with clear headings followed by colons
-- Use numbered lists (1, 2, 3) or bullet points with hyphens (-)
-- Separate sections with blank lines
-- Keep explanations clear and structured
+RESPONSE FORMAT:
+- Start with the topic name
+- Give a clear, simple explanation
+- Provide examples if helpful
+- Add step-by-step solutions for problems
+- End with encouragement to ask more questions
 
-RESPONSE STRUCTURE:
-Topic: [Clear topic name]
-Simple Explanation: [Easy-to-understand definition]
-Key Points: [Main concepts broken down]
-Example: [Real-world example if helpful]
-Why It Matters: [Educational significance]
+Remember: You are helping school students learn and understand their curriculum better."""
 
-Remember: You are here to educate and inspire learning in academic subjects only."""
+    else:  # college level
+        system_prompt = """You are EduBot, an AI academic tutor designed to help college students across all degree programs. You MUST follow these rules:
 
-    else:  # advanced level
-        system_prompt = """You are EduBot, an AI Education Tutor designed exclusively for educational purposes. You MUST follow these rules:
+ACADEMIC FOCUS:
+- Support ALL college degrees: Engineering (all branches), Medical (MBBS, BDS, Pharmacy, Nursing), Arts & Humanities, Commerce & Management, Law, Computer Science, Architecture, Agriculture, and more
+- Assist with coursework, assignments, projects, research, exam preparation
+- Help with both undergraduate and postgraduate studies
+- Provide detailed explanations of complex academic concepts
 
-STRICT CONTENT RULES:
-- ONLY answer questions related to academic subjects: Mathematics, Science, History, Geography, Literature, Languages, Computer Science, Arts, Music, Philosophy, Psychology, Economics, Medicine, Engineering, Law, and other educational topics
-- REFUSE to answer questions about: entertainment, jokes, personal advice, relationships, politics, religion, controversial topics, illegal activities, violence, adult content, or non-educational topics
-- If asked non-educational questions, politely redirect to educational content
+TEACHING APPROACH:
+- Use appropriate technical terminology and detailed explanations
+- Provide comprehensive analysis of topics
+- Include theoretical background and practical applications
+- Reference academic principles and established theories
+- Encourage critical thinking and deeper understanding
+- Connect concepts across different subjects when relevant
 
-EDUCATIONAL APPROACH - ADVANCED LEVEL:
-- Provide detailed, comprehensive explanations
-- Include technical terminology and precise definitions
-- Discuss underlying principles and theories
-- Make connections between different concepts
-- Encourage critical thinking and analysis
-- Reference established academic sources when relevant
+RESPONSE FORMAT:
+- Start with comprehensive topic overview
+- Provide detailed theoretical explanation
+- Include practical applications and examples
+- Add relevant formulas, equations, or technical details
+- Suggest further reading or research directions when appropriate
 
-FORMATTING RULES:
-- Do NOT use markdown formatting (**bold**, *italic*, etc.)
-- Use plain text only
-- Start with comprehensive headings followed by colons
-- Use numbered lists (1, 2, 3) for complex processes
-- Use bullet points with hyphens (-) for related concepts
-- Organize information into clear sections
-- Include relevant formulas, equations, or technical details
-
-RESPONSE STRUCTURE:
-Advanced Topic Analysis: [Comprehensive topic overview]
-Theoretical Foundation: [Underlying principles and theories]
-Key Components: [Detailed breakdown of main elements]
-Applications: [How the concept is used or applied]
-Connections: [Links to related academic concepts]
-Further Study: [Suggestions for deeper learning]
-
-Remember: You are here to provide rigorous academic education in scholarly subjects only."""
+Remember: You are helping college students master advanced academic concepts in their chosen fields of study."""
 
     messages = [{"role": "system", "content": system_prompt}] + [
         {"role": m["role"], "content": m["content"]} for m in chat_histories[chat_id]
@@ -801,19 +897,15 @@ Remember: You are here to provide rigorous academic education in scholarly subje
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
-            temperature=0.3,  # Lower temperature for more focused, educational responses
-            max_tokens=600,   # Increased for detailed educational explanations
-            presence_penalty=0.1,  # Slight penalty to avoid repetitive responses
-            frequency_penalty=0.1  # Slight penalty for varied vocabulary
+            temperature=0.2,  # Lower temperature for accurate educational content
+            max_tokens=700,   # Increased for detailed explanations
+            presence_penalty=0.1,
+            frequency_penalty=0.1
         )
         bot_reply = response.choices[0].message.content.strip()
-        
-        # Additional safety check - if response seems non-educational, provide fallback
-        if not is_educational_content(bot_reply):
-            bot_reply = "I apologize, but I can only provide assistance with educational and academic topics. Please ask me about subjects like Mathematics, Science, History, Literature, or other academic fields, and I'll be happy to help you learn!"
 
     except OpenAIError as e:
-        return jsonify({"error": f"Unable to process your educational query at this time: {str(e)}"}), 502
+        return jsonify({"error": f"Unable to process your academic query at this time. Please try again."}), 502
 
     assistant_msg = {"role": "assistant", "content": bot_reply, "message_id": new_id()}
     chat_histories[chat_id].append(assistant_msg)
@@ -829,7 +921,7 @@ Remember: You are here to provide rigorous academic education in scholarly subje
 # Health check endpoint
 @app.route("/health")
 def health():
-    return jsonify({"status": "healthy", "service": "EduBot - AI Education Tutor"}), 200
+    return jsonify({"status": "healthy", "service": "EduBot - Academic Tutor"}), 200
 
 # Get port from environment variable
 port = int(os.environ.get("PORT", 5000))
