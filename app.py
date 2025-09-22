@@ -29,7 +29,7 @@ CORS(app, origins=["*"])
 
 # Enhanced in-memory chat store with cleanup
 chat_histories: Dict[str, Dict] = {}
-CHAT_CLEANUP_HOURS = 24  # Clean up chats older than 24 hours
+CHAT_CLEANUP_HOURS = 24
 
 def new_id() -> str:
     return str(uuid.uuid4())
@@ -52,7 +52,6 @@ def cleanup_old_chats():
 def is_educational_content(message: str) -> bool:
     """Enhanced educational content detection for production"""
     
-    # Strictly blocked content
     blocked_keywords = [
         'porn', 'sex', 'nude', 'explicit', 'adult content', 'sexual',
         'violence', 'kill', 'murder', 'weapon', 'bomb', 'terrorist', 'hate',
@@ -61,9 +60,7 @@ def is_educational_content(message: str) -> bool:
         'suicide', 'self harm', 'racist', 'hate speech', 'discrimination'
     ]
     
-    # Comprehensive educational topics
     educational_topics = [
-        # Core Academic Subjects
         'mathematics', 'math', 'algebra', 'geometry', 'calculus', 'trigonometry', 'statistics',
         'physics', 'chemistry', 'biology', 'science', 'botany', 'zoology', 'ecology',
         'history', 'geography', 'civics', 'political science', 'social studies',
@@ -71,35 +68,24 @@ def is_educational_content(message: str) -> bool:
         'economics', 'commerce', 'accounting', 'business studies', 'finance',
         'philosophy', 'psychology', 'sociology', 'anthropology', 'archaeology',
         'art', 'music', 'dance', 'drama', 'theater', 'fine arts', 'design',
-        
-        # STEM Fields
         'computer science', 'programming', 'software engineering', 'data science',
         'artificial intelligence', 'ai', 'machine learning', 'deep learning',
         'algorithms', 'data structures', 'databases', 'networks', 'cybersecurity',
         'engineering', 'mechanical', 'electrical', 'civil', 'chemical', 'aerospace',
         'biotechnology', 'nanotechnology', 'robotics', 'automation',
-        
-        # Medical & Health Sciences
         'medicine', 'anatomy', 'physiology', 'pharmacology', 'pathology',
         'dentistry', 'nursing', 'public health', 'nutrition', 'psychology',
         'human body', 'organs', 'bones', 'muscles', 'blood', 'cells',
-        
-        # Languages & Communication
         'languages', 'spanish', 'french', 'german', 'chinese', 'japanese',
         'communication', 'public speaking', 'debate', 'journalism',
-        
-        # Research & Academic Skills
         'research', 'thesis', 'dissertation', 'analysis', 'methodology',
         'statistics', 'data analysis', 'academic writing', 'citations',
-        
-        # General Academic Terms
         'study', 'learn', 'education', 'academic', 'school', 'college', 'university',
         'exam', 'test', 'assignment', 'homework', 'project', 'quiz',
         'concept', 'theory', 'principle', 'formula', 'equation', 'definition',
         'explanation', 'example', 'solution', 'problem solving'
     ]
     
-    # Question indicators
     academic_indicators = [
         'what is', 'what are', 'explain', 'how to', 'how do', 'how does',
         'define', 'definition of', 'meaning of', 'solve', 'calculate',
@@ -110,7 +96,6 @@ def is_educational_content(message: str) -> bool:
         'how many', 'how much', 'who is', 'who was', 'help me'
     ]
     
-    # Greetings
     greetings = [
         'hi', 'hello', 'hey', 'hii', 'hello there', 'good morning',
         'good afternoon', 'good evening', 'namaste', 'greetings'
@@ -118,33 +103,27 @@ def is_educational_content(message: str) -> bool:
     
     message_lower = message.lower().strip()
     
-    # Block inappropriate content
     for blocked in blocked_keywords:
         if blocked in message_lower:
             return False
     
-    # Allow greetings
     if any(greeting == message_lower for greeting in greetings):
         return True
     
-    # Allow educational content
     for topic in educational_topics:
         if topic in message_lower:
             return True
     
-    # Check for academic question patterns
     for indicator in academic_indicators:
         if indicator in message_lower:
             return True
     
-    # Allow short questions (likely educational)
     if len(message.split()) <= 10 and '?' in message:
         return True
     
-    # Default to allowing (educational bias)
     return True
 
-# FIXED HTML with corrected JavaScript
+# HTML with FIXED typing animation
 @app.route("/")
 def index():
     return '''
@@ -479,6 +458,17 @@ def index():
       background: rgba(102, 126, 234, 0.12);
     }
 
+    /* FIXED typing animation CSS */
+    .typing-text {
+      border-right: 2px solid #667eea;
+      animation: typing-cursor 1s infinite;
+    }
+
+    @keyframes typing-cursor {
+      0%, 50% { border-right-color: #667eea; }
+      51%, 100% { border-right-color: transparent; }
+    }
+
     @media (max-width: 768px) {
       body { padding: 12px; }
       .chat-container { border-radius: 18px; }
@@ -502,13 +492,13 @@ def index():
     
     <div class="notice">
       <i class="fas fa-university"></i>
-      Ask me any academic question - I provide detailed answers with follow-up suggestions
+      Ask me any academic question - I provide concise answers with typing animation
     </div>
     
     <div id="chatWindow">
       <div class="welcome-message">
         <h3>Welcome to EduBot!</h3>
-        <p>I'm your professional AI academic tutor. Ask me anything about any subject and I'll provide comprehensive answers with follow-up questions to deepen your understanding.</p>
+        <p>I'm your professional AI academic tutor. Ask me anything about any subject and I'll provide clear, concise answers with realistic typing animation.</p>
       </div>
     </div>
 
@@ -533,13 +523,12 @@ def index():
         <span class="feature-tag">Languages</span>
         <span class="feature-tag">History</span>
         <span class="feature-tag">Computer Science</span>
-        <span class="feature-tag">Follow-up Questions</span>
+        <span class="feature-tag">Typing Animation</span>
       </div>
     </div>
   </div>
 
   <script>
-    // FIXED JavaScript - Removed syntax errors
     const chatWindow = document.getElementById('chatWindow');
     const input = document.getElementById('questionInput');
     const sendBtn = document.getElementById('sendBtn');
@@ -548,7 +537,6 @@ def index():
     let currentChatId = null;
     let isTyping = false;
 
-    // Simple and reliable button state management
     function updateSendButton() {
       const hasText = input.value.trim().length > 0;
       sendBtn.disabled = !hasText || isTyping;
@@ -562,7 +550,6 @@ def index():
       }
     }
 
-    // Event listeners
     input.addEventListener('input', updateSendButton);
     input.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' && !sendBtn.disabled) {
@@ -585,7 +572,29 @@ def index():
       }
     }
 
-    function addMessage(text, isUser, followUpSuggestions) {
+    // ENHANCED typing animation function
+    function typeMessage(element, text, callback) {
+      element.innerHTML = '';
+      element.classList.add('typing-text');
+      
+      let i = 0;
+      const speed = 30; // milliseconds per character
+      
+      function typeChar() {
+        if (i < text.length) {
+          element.innerHTML += text.charAt(i);
+          i++;
+          setTimeout(typeChar, speed);
+        } else {
+          element.classList.remove('typing-text');
+          if (callback) callback();
+        }
+      }
+      
+      typeChar();
+    }
+
+    function addMessage(text, isUser, followUpSuggestions, useTyping = false) {
       const messageDiv = document.createElement('div');
       messageDiv.className = 'message ' + (isUser ? 'user' : 'bot');
       
@@ -599,26 +608,31 @@ def index():
       if (isUser) {
         content.textContent = text;
       } else {
-        content.innerHTML = text.replace(/\\n/g, '<br>');
-        
-        // Add follow-up suggestions if provided
-        if (followUpSuggestions && followUpSuggestions.length > 0) {
-          const suggestionsDiv = document.createElement('div');
-          suggestionsDiv.className = 'follow-up-suggestions';
-          
-          followUpSuggestions.forEach(function(suggestion) {
-            const btn = document.createElement('button');
-            btn.className = 'follow-up-btn';
-            btn.textContent = suggestion;
-            btn.addEventListener('click', function() {
-              input.value = suggestion;
-              updateSendButton();
-              sendMessage();
-            });
-            suggestionsDiv.appendChild(btn);
+        if (useTyping) {
+          // Use typing animation for bot responses
+          typeMessage(content, text, function() {
+            // Add follow-up suggestions after typing is complete
+            if (followUpSuggestions && followUpSuggestions.length > 0) {
+              const suggestionsDiv = document.createElement('div');
+              suggestionsDiv.className = 'follow-up-suggestions';
+              
+              followUpSuggestions.forEach(function(suggestion) {
+                const btn = document.createElement('button');
+                btn.className = 'follow-up-btn';
+                btn.textContent = suggestion;
+                btn.addEventListener('click', function() {
+                  input.value = suggestion;
+                  updateSendButton();
+                  sendMessage();
+                });
+                suggestionsDiv.appendChild(btn);
+              });
+              
+              content.appendChild(suggestionsDiv);
+            }
           });
-          
-          content.appendChild(suggestionsDiv);
+        } else {
+          content.innerHTML = text.replace(/\\n/g, '<br>');
         }
       }
       
@@ -681,16 +695,17 @@ def index():
         removeTypingIndicator();
         
         if (data.error) {
-          addMessage('Sorry, I encountered an error: ' + data.error, false);
+          addMessage('Sorry, I encountered an error: ' + data.error, false, [], true);
         } else {
           currentChatId = data.chat_id;
           const followUpSuggestions = data.follow_up_suggestions || [];
-          addMessage(data.reply.content, false, followUpSuggestions);
+          // Enable typing animation for bot responses
+          addMessage(data.reply.content, false, followUpSuggestions, true);
         }
         
       } catch (error) {
         removeTypingIndicator();
-        addMessage('Sorry, I am having connection issues. Please try again.', false);
+        addMessage('Sorry, I am having connection issues. Please try again.', false, [], true);
       } finally {
         isTyping = false;
         updateSendButton();
@@ -705,7 +720,7 @@ def index():
 </html>
     '''
 
-# Production-level chat endpoint with follow-up question handling
+# CORRECTED chat endpoint with appropriate response lengths
 @app.route("/chat", methods=["POST"])
 def chat() -> tuple:
     try:
@@ -737,12 +752,12 @@ def chat() -> tuple:
                 "chat_id": chat_id,
                 "reply": {
                     "message_id": new_id(),
-                    "content": "Hello! I'm EduBot, your professional AI academic tutor. I can help you with any academic subject and provide detailed explanations with follow-up questions. What would you like to learn about?"
+                    "content": "Hello! I'm EduBot, your AI academic tutor. I provide clear, concise answers to help you learn. What would you like to know about?"
                 },
                 "follow_up_suggestions": [
-                    "What subjects do you specialize in?",
-                    "How can you help with my studies?",
-                    "Can you explain complex topics?"
+                    "What subjects can you help with?",
+                    "How do you explain complex topics?",
+                    "Can you help with homework?"
                 ]
             }), 200
 
@@ -752,7 +767,7 @@ def chat() -> tuple:
                 "chat_id": chat_id,
                 "reply": {
                     "message_id": new_id(),
-                    "content": "I'm designed specifically for educational assistance. Please ask me about academic subjects like Mathematics, Science, Literature, History, Computer Science, or any other school or college topic."
+                    "content": "I'm designed to help with academic subjects only. Please ask me about Mathematics, Science, Literature, History, Computer Science, or any other educational topic."
                 },
                 "follow_up_suggestions": [
                     "Help me with Math",
@@ -769,81 +784,59 @@ def chat() -> tuple:
             "timestamp": datetime.now()
         })
 
-        # System prompt based on level
+        # CORRECTED system prompts for appropriate response lengths
+        base_prompt = """You are EduBot, a professional AI academic tutor. 
+
+CRITICAL RULES:
+- Give DIRECT, CONCISE answers appropriate to the question complexity
+- For simple factual questions: 1-2 sentences maximum
+- For complex topics: 3-4 sentences maximum  
+- NO emojis in responses
+- Be educational but brief
+- Match response length to question complexity
+
+EXAMPLES:
+Q: "What is AI?"
+A: "Artificial Intelligence (AI) is technology that enables machines to simulate human intelligence, including learning, reasoning, and problem-solving. It's used in applications like voice assistants, recommendation systems, and autonomous vehicles."
+
+Q: "Which is the smallest bone?"  
+A: "The stapes bone in the middle ear is the smallest bone in the human body."
+
+Remember: Be concise, accurate, and educational."""
+
         if level == "school":
-            system_prompt = """You are EduBot, a professional AI academic tutor for school students. 
+            system_prompt = base_prompt + "\n\nUSE: Simple language appropriate for school students. Avoid technical jargon."
+        elif level == "college": 
+            system_prompt = base_prompt + "\n\nUSE: More detailed explanations with appropriate technical terms for college level."
+        else:  # research
+            system_prompt = base_prompt + "\n\nUSE: Precise academic language with technical accuracy for research context."
 
-GUIDELINES:
-- Provide clear, accurate educational responses
-- Use age-appropriate language
-- Give direct answers for factual questions
-- Provide comprehensive explanations for complex topics
-- No emojis in responses
-- Be encouraging and supportive
-
-RESPONSE LENGTH:
-- For simple facts: 1-2 sentences with brief explanation
-- For complex topics: 3-4 sentences with examples
-- Always ensure clarity and understanding"""
-
-        elif level == "college":
-            system_prompt = """You are EduBot, a professional AI academic tutor for college students.
-
-GUIDELINES:
-- Provide detailed, academic-level responses
-- Include technical terminology when appropriate
-- Give comprehensive explanations
-- Support critical thinking
-- No emojis in responses
-- Maintain professional academic tone
-
-RESPONSE LENGTH:
-- For factual questions: 2-3 sentences with context
-- For complex topics: 4-6 sentences with analysis
-- Include relevant examples and applications"""
-
-        else:  # research level
-            system_prompt = """You are EduBot, a professional AI academic tutor for research-level inquiries.
-
-GUIDELINES:
-- Provide expert-level responses with academic rigor
-- Include methodological considerations
-- Support advanced analysis
-- Maintain highest accuracy standards
-- No emojis in responses
-- Use formal academic discourse
-
-RESPONSE LENGTH:
-- Detailed responses appropriate for research context
-- Include multiple perspectives when relevant
-- Address implications and applications"""
-
-        # Build conversation context
-        recent_messages = chat_histories[chat_id]['messages'][-10:]
+        # Build conversation context (last 6 messages only)
+        recent_messages = chat_histories[chat_id]['messages'][-6:]
         messages = [{"role": "system", "content": system_prompt}] + [
             {"role": m["role"], "content": m["content"]} 
             for m in recent_messages
         ]
 
-        # Generate response
+        # Generate response with REDUCED token limit
         try:
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
-                temperature=0.4,
-                max_tokens=300,
-                presence_penalty=0.1,
+                temperature=0.3,  # Lower for more consistent, concise responses
+                max_tokens=150,   # REDUCED from 300 to prevent long responses
+                presence_penalty=0.2,
                 frequency_penalty=0.1
             )
             bot_reply = response.choices[0].message.content.strip()
 
-            # Generate follow-up suggestions
+            # Generate appropriate follow-up suggestions
             follow_up_suggestions = generate_follow_up_suggestions(user_message, bot_reply, level)
 
         except OpenAIError as e:
             logger.error(f"OpenAI API error: {str(e)}")
             return jsonify({
-                "error": "I'm experiencing technical difficulties. Please try again in a moment."
+                "error": "I'm experiencing technical difficulties. Please try again."
             }), 502
 
         # Add assistant response to history
@@ -875,63 +868,49 @@ def generate_follow_up_suggestions(user_question: str, bot_response: str, level:
     
     question_lower = user_question.lower()
     
-    # Science topics
-    if any(word in question_lower for word in ['physics', 'chemistry', 'biology', 'science']):
+    # Simple factual questions
+    if any(phrase in question_lower for phrase in ['what is', 'which is', 'who is']):
         if level == "school":
             return [
-                "Can you give me a real-world example?",
-                "How is this used in daily life?",
-                "What are the key points to remember?"
-            ]
-        else:
-            return [
-                "What are the underlying mechanisms?",
-                "How does this relate to other concepts?",
-                "What are current research developments?"
-            ]
-    
-    # Mathematics
-    elif any(word in question_lower for word in ['math', 'algebra', 'geometry', 'calculus']):
-        if level == "school":
-            return [
-                "Can you show me a step-by-step example?",
-                "What are common mistakes to avoid?",
-                "How do I practice this concept?"
+                "Can you give me an example?",
+                "How is this used in real life?",
+                "Why is this important?"
             ]
         else:
             return [
                 "What are the practical applications?",
-                "How does this connect to advanced topics?",
-                "What are the theoretical implications?"
+                "How does this relate to other concepts?",
+                "What are the current developments?"
             ]
     
-    # History topics
-    elif any(word in question_lower for word in ['history', 'historical', 'war', 'ancient']):
+    # Science topics
+    elif any(word in question_lower for word in ['physics', 'chemistry', 'biology', 'science']):
         return [
-            "What were the causes and effects?",
-            "How did this impact society?",
-            "What lessons can we learn from this?"
+            "Can you explain how this works?",
+            "What are real-world examples?",
+            "How can I remember this better?"
+        ]
+    
+    # Mathematics
+    elif any(word in question_lower for word in ['math', 'algebra', 'geometry', 'calculus']):
+        return [
+            "Can you show me an example?",
+            "What are common mistakes to avoid?",
+            "How do I practice this?"
         ]
     
     # Computer Science
-    elif any(word in question_lower for word in ['computer', 'programming', 'algorithm', 'ai']):
-        if level == "school":
-            return [
-                "How do I get started with this?",
-                "What tools do I need?",
-                "Can you show me a simple example?"
-            ]
-        else:
-            return [
-                "What are the implementation challenges?",
-                "How does this scale in practice?",
-                "What are alternative approaches?"
-            ]
+    elif any(word in question_lower for word in ['computer', 'programming', 'ai', 'algorithm']):
+        return [
+            "How do I get started learning this?",
+            "What tools do I need?",
+            "Can you show me how it works?"
+        ]
     
     # Default follow-ups
     return [
-        "Can you explain this further?",
-        "How does this apply to my studies?",
+        "Can you explain this more simply?",
+        "How does this help my studies?",
         "What should I learn next?"
     ]
 
@@ -939,11 +918,10 @@ def generate_follow_up_suggestions(user_question: str, bot_response: str, level:
 def health():
     return jsonify({
         "status": "healthy",
-        "service": "EduBot - Professional AI Academic Tutor",
+        "service": "EduBot - AI Academic Tutor",
         "active_chats": len(chat_histories)
     }), 200
 
-# Get port from environment variable
 port = int(os.environ.get("PORT", 5000))
 
 if __name__ == "__main__":
